@@ -44,6 +44,7 @@ export default function App() {
   const [selectedGuideline, setSelectedGuideline] = useState<Guideline | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Handle Auth State
   useEffect(() => {
@@ -105,6 +106,22 @@ export default function App() {
 
   const allGuidelines = [...globalGuidelines, ...guidelines];
   const isAdmin = user?.email === "nonoknon1@gmail.com";
+
+  const handleLogin = async () => {
+    try {
+      setAuthError(null);
+      await signInWithGoogle();
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        addBotMessage("⚠️ การเข้าสู่ระบบถูกยกเลิกเนื่องจากหน้าต่างถูกปิดก่อนเสร็จสิ้นครับ กรุณาลองใหม่อีกครั้งหากต้องการใช้งานฟีเจอร์ที่ต้องระบุตัวตน");
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        // Ignore this one as it usually happens when multiple popups are opened
+      } else {
+        console.error("Auth Error:", error);
+        addBotMessage(`⚠️ เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ${error.message}`);
+      }
+    }
+  };
 
   // Intercept commands
   const handleSendMessage = async (text: string) => {
@@ -269,7 +286,7 @@ export default function App() {
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           user={user}
-          onLogin={signInWithGoogle}
+          onLogin={handleLogin}
           onLogout={logOut}
           isAdmin={isAdmin}
         />
