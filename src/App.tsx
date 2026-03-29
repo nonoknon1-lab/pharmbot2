@@ -10,31 +10,26 @@ import ChatArea from './components/ChatArea';
 import GuidelineModal from './components/GuidelineModal';
 import { Guideline, Message } from './types';
 import { generateClinicalResponse } from './lib/gemini';
+import { File, FileText, Link2, X } from 'lucide-react';
 
 const GUIDELINES_STORE_KEY = 'pharmaguide_guidelines';
-const MESSAGES_STORE_KEY = 'pharmaguide_messages';
 
 export default function App() {
   const [guidelines, setGuidelines] = useState<Guideline[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedGuideline, setSelectedGuideline] = useState<Guideline | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load guidelines and messages from IndexedDB on startup
+  // Load guidelines from IndexedDB on startup
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [storedGuidelines, storedMessages] = await Promise.all([
-          get<Guideline[]>(GUIDELINES_STORE_KEY),
-          get<Message[]>(MESSAGES_STORE_KEY)
-        ]);
+        const storedGuidelines = await get<Guideline[]>(GUIDELINES_STORE_KEY);
         
         if (storedGuidelines && storedGuidelines.length > 0) {
           setGuidelines(storedGuidelines);
-        }
-        if (storedMessages && storedMessages.length > 0) {
-          setMessages(storedMessages);
         }
       } catch (error) {
         console.error("Failed to load data from storage:", error);
@@ -54,14 +49,7 @@ export default function App() {
     }
   }, [guidelines, isInitialized]);
 
-  // Save messages to IndexedDB whenever they change
-  useEffect(() => {
-    if (isInitialized) {
-      set(MESSAGES_STORE_KEY, messages).catch(err => {
-        console.error("Failed to save messages to storage:", err);
-      });
-    }
-  }, [messages, isInitialized]);
+  // We are NOT saving messages anymore as requested
 
   // Intercept commands
   const handleSendMessage = async (text: string) => {
@@ -155,16 +143,25 @@ export default function App() {
     const target = guidelines.find(g => g.id === id);
     if (target) {
       setGuidelines(prev => prev.filter(g => g.id !== id));
+      if (selectedGuideline?.id === id) setSelectedGuideline(null);
       addBotMessage(`ลบ Guideline **${target.name}** ออกจากระบบเรียบร้อยแล้วครับ`);
     }
   };
 
+  const handleViewGuideline = (id: string) => {
+    const target = guidelines.find(g => g.id === id);
+    if (target) {
+      setSelectedGuideline(target);
+    }
+  };
+
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f5f7fa]">
+    <div className="flex h-screen overflow-hidden bg-[#f0f4f8]">
       <Sidebar 
         guidelines={guidelines} 
         onAddClick={() => setIsModalOpen(true)} 
         onRemove={handleRemoveGuideline}
+        onView={handleViewGuideline}
       />
       
       <ChatArea 
@@ -178,6 +175,50 @@ export default function App() {
         onClose={() => setIsModalOpen(false)} 
         onAdd={handleAddGuideline} 
       />
+
+      {/* Guideline Content Viewer */}
+      {selectedGuideline && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-6 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[40px] w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-slate-900/20 animate-in zoom-in-95 duration-300">
+            <div className="p-10 border-b border-slate-50 flex justify-between items-start bg-gradient-to-br from-blue-50/50 to-white">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 shrink-0">
+                  {selectedGuideline.type === 'pdf' ? (
+                    <File className="w-7 h-7 text-rose-500" />
+                  ) : selectedGuideline.type === 'link' ? (
+                    <Link2 className="w-7 h-7 text-emerald-500" />
+                  ) : (
+                    <FileText className="w-7 h-7 text-blue-500" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">{selectedGuideline.name}</h3>
+                  <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">
+                    Added on {new Date(selectedGuideline.date).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedGuideline(null)}
+                className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-slate-600 active:scale-90"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-10 overflow-y-auto text-slate-600 leading-relaxed whitespace-pre-wrap font-medium text-[16px]">
+              {selectedGuideline.content}
+            </div>
+            <div className="p-8 bg-slate-50/50 border-t border-slate-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setSelectedGuideline(null)}
+                className="px-8 py-3 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-900 transition-all shadow-lg shadow-slate-200 active:scale-95"
+              >
+                Close Viewer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
