@@ -80,18 +80,41 @@ export const generateClinicalResponse = async (
   const contents: Content[] = [];
   let hasLinks = false;
 
-  // 1. Context Injection
-  if (guidelines.length > 0) {
+  // 1. Context Injection - Simple RAG (Keyword Match)
+  // Filter guidelines to only include those relevant to the prompt to save tokens and avoid quota issues
+  const keywords = prompt.toLowerCase().split(/\s+/).filter(k => k.length > 2);
+  const relevantGuidelines = guidelines.filter(g => {
+    // Always include if prompt is short or no keywords extracted
+    if (keywords.length === 0) return true;
+    
+    const nameMatch = keywords.some(k => g.name.toLowerCase().includes(k));
+    const contentMatch = g.type === 'text' && keywords.some(k => g.content.toLowerCase().includes(k));
+    
+    return nameMatch || contentMatch;
+  }).slice(0, 5); // Limit to top 5 relevant guidelines to save tokens
+
+  // If no specific match, just take the most recent 3
+  const contextGuidelines = relevantGuidelines.length > 0 ? relevantGuidelines : guidelines.slice(0, 3);
+
+  if (contextGuidelines.length > 0) {
     const contextParts: Part[] = [
-      { text: "Here are the uploaded guidelines you MUST use to answer all subsequent questions. Do not use outside knowledge. If the answer is not in these guidelines, say so exactly as instructed.\n\n" }
+      { text: "Here are the relevant uploaded guidelines you MUST use to answer all subsequent questions. Do not use outside knowledge. If the answer is not in these guidelines, say so exactly as instructed.\n\n" }
     ];
 
-    guidelines.forEach(g => {
+    contextGuidelines.forEach(g => {
       contextParts.push({ text: `--- START GUIDELINE: ${g.name} ---\n` });
       if (g.type === 'text') {
-        contextParts.push({ text: g.content });
+        // Truncate very long text guidelines to save tokens
+        const truncatedContent = g.content.length > 50000 ? g.content.substring(0, 50000) + "... [truncated]" : g.content;
+        contextParts.push({ text: truncatedContent });
       } else if (g.type === 'pdf') {
-        contextParts.push({ inlineData: { mimeType: 'application/pdf', data: g.content } });
+        // Only send PDF data if it's within a reasonable size (e.g., < 500KB base64)
+        // Large PDFs should be pre-processed or only sent if specifically requested
+        if (g.content.length < 700000) {
+          contextParts.push({ inlineData: { mimeType: 'application/pdf', data: g.content } });
+        } else {
+          contextParts.push({ text: `[PDF Content for ${g.name} is too large to send directly. Please refer to the guideline name and use your general knowledge if specifically allowed by instructions, but otherwise state that the content is too large.]` });
+        }
       } else if (g.type === 'link') {
         contextParts.push({ text: `Please read the content from this URL: ${g.content}` });
         hasLinks = true;
@@ -100,7 +123,7 @@ export const generateClinicalResponse = async (
     });
 
     contents.push({ role: 'user', parts: contextParts });
-    contents.push({ role: 'model', parts: [{ text: "Understood. I will strictly follow the instructions and ONLY use these guidelines to answer." }] });
+    contents.push({ role: 'model', parts: [{ text: "Understood. I will strictly follow the instructions and ONLY use these relevant guidelines to answer." }] });
   }
 
   // 2. History

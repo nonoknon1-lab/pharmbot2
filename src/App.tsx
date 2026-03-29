@@ -71,12 +71,13 @@ export default function App() {
 
   // Sync Guidelines from Firestore
   useEffect(() => {
-    if (!isAuthReady || !user) {
+    if (!isAuthReady || !user?.uid) {
       setGuidelines([]);
       return;
     }
 
-    const guidelinesPath = `users/${user.uid}/guidelines`;
+    const uid = user.uid;
+    const guidelinesPath = `users/${uid}/guidelines`;
     const q = query(collection(db, guidelinesPath), orderBy('date', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -87,7 +88,7 @@ export default function App() {
     });
 
     return () => unsubscribe();
-  }, [user, isAuthReady]);
+  }, [user?.uid, isAuthReady]);
 
   // Sync Global Guidelines from Firestore
   useEffect(() => {
