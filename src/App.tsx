@@ -4,17 +4,64 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { get, set } from 'idb-keyval';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import GuidelineModal from './components/GuidelineModal';
 import { Guideline, Message } from './types';
 import { generateClinicalResponse } from './lib/gemini';
 
+const GUIDELINES_STORE_KEY = 'pharmaguide_guidelines';
+const MESSAGES_STORE_KEY = 'pharmaguide_messages';
+
 export default function App() {
   const [guidelines, setGuidelines] = useState<Guideline[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load guidelines and messages from IndexedDB on startup
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [storedGuidelines, storedMessages] = await Promise.all([
+          get<Guideline[]>(GUIDELINES_STORE_KEY),
+          get<Message[]>(MESSAGES_STORE_KEY)
+        ]);
+        
+        if (storedGuidelines && storedGuidelines.length > 0) {
+          setGuidelines(storedGuidelines);
+        }
+        if (storedMessages && storedMessages.length > 0) {
+          setMessages(storedMessages);
+        }
+      } catch (error) {
+        console.error("Failed to load data from storage:", error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Save guidelines to IndexedDB whenever they change
+  useEffect(() => {
+    if (isInitialized) {
+      set(GUIDELINES_STORE_KEY, guidelines).catch(err => {
+        console.error("Failed to save guidelines to storage:", err);
+      });
+    }
+  }, [guidelines, isInitialized]);
+
+  // Save messages to IndexedDB whenever they change
+  useEffect(() => {
+    if (isInitialized) {
+      set(MESSAGES_STORE_KEY, messages).catch(err => {
+        console.error("Failed to save messages to storage:", err);
+      });
+    }
+  }, [messages, isInitialized]);
 
   // Intercept commands
   const handleSendMessage = async (text: string) => {
