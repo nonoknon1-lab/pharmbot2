@@ -1,7 +1,18 @@
 import { GoogleGenAI, Content, Part } from "@google/genai";
 import { Guideline, Message } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiClient: GoogleGenAI | null = null;
+
+const getAIClient = () => {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("API_KEY_MISSING");
+    }
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
+};
 
 const SYSTEM_INSTRUCTION = `You are PharmaGuide AI — a specialized clinical decision-support assistant built exclusively for licensed pharmacists.
 
@@ -99,6 +110,8 @@ export const generateClinicalResponse = async (
 
   // 3. Current Prompt
   contents.push({ role: 'user', parts: [{ text: prompt }] });
+
+  const ai = getAIClient();
 
   const response = await ai.models.generateContent({
     model: 'gemini-3.1-pro-preview',

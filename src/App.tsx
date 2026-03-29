@@ -74,9 +74,13 @@ export default function App() {
       
       const responseText = await generateClinicalResponse(text, historyForAI, guidelines);
       addBotMessage(responseText);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating response:", error);
-      addBotMessage("ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อกับระบบ AI กรุณาลองใหม่อีกครั้งครับ");
+      if (error.message === "API_KEY_MISSING") {
+        addBotMessage("⚠️ **ข้อผิดพลาด:** ไม่พบ API Key ในระบบ\n\nหากคุณนำระบบนี้ไป Deploy บน Vercel กรุณาตั้งค่า Environment Variables โดยเพิ่มตัวแปรชื่อ `GEMINI_API_KEY` และใส่ค่า API Key ของคุณครับ");
+      } else {
+        addBotMessage("ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อกับระบบ AI กรุณาลองใหม่อีกครั้งครับ");
+      }
     } finally {
       setIsLoading(false);
     }
