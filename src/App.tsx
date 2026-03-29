@@ -21,6 +21,7 @@ export default function App() {
   const [selectedGuideline, setSelectedGuideline] = useState<Guideline | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Load guidelines from IndexedDB on startup
   useEffect(() => {
@@ -156,18 +157,35 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f0f4f8]">
+    <div className="flex h-screen overflow-hidden bg-[#f0f4f8] relative">
+      {/* Mobile Sidebar Backdrop */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       <Sidebar 
         guidelines={guidelines} 
-        onAddClick={() => setIsModalOpen(true)} 
+        onAddClick={() => {
+          setIsModalOpen(true);
+          setIsSidebarOpen(false);
+        }} 
         onRemove={handleRemoveGuideline}
-        onView={handleViewGuideline}
+        onView={(id) => {
+          handleViewGuideline(id);
+          setIsSidebarOpen(false);
+        }}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
       
       <ChatArea 
         messages={messages} 
         onSendMessage={handleSendMessage} 
         isLoading={isLoading} 
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
       
       <GuidelineModal 
@@ -178,40 +196,40 @@ export default function App() {
 
       {/* Guideline Content Viewer */}
       {selectedGuideline && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-6 animate-in fade-in duration-300">
-          <div className="bg-white rounded-[40px] w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-slate-900/20 animate-in zoom-in-95 duration-300">
-            <div className="p-10 border-b border-slate-50 flex justify-between items-start bg-gradient-to-br from-blue-50/50 to-white">
-              <div className="flex items-center gap-5">
-                <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 shrink-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] sm:rounded-[40px] w-full max-w-3xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-slate-900/20 animate-in zoom-in-95 duration-300">
+            <div className="p-6 sm:p-10 border-b border-slate-50 flex justify-between items-start bg-gradient-to-br from-blue-50/50 to-white">
+              <div className="flex items-center gap-3 sm:gap-5">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-md border border-slate-100 shrink-0">
                   {selectedGuideline.type === 'pdf' ? (
-                    <File className="w-7 h-7 text-rose-500" />
+                    <File className="w-5 h-5 sm:w-7 sm:h-7 text-rose-500" />
                   ) : selectedGuideline.type === 'link' ? (
-                    <Link2 className="w-7 h-7 text-emerald-500" />
+                    <Link2 className="w-5 h-5 sm:w-7 sm:h-7 text-emerald-500" />
                   ) : (
-                    <FileText className="w-7 h-7 text-blue-500" />
+                    <FileText className="w-5 h-5 sm:w-7 sm:h-7 text-blue-500" />
                   )}
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">{selectedGuideline.name}</h3>
-                  <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight mb-0.5 sm:mb-1 truncate">{selectedGuideline.name}</h3>
+                  <p className="text-[10px] sm:text-[12px] font-bold text-slate-400 uppercase tracking-widest">
                     Added on {new Date(selectedGuideline.date).toLocaleDateString()}
                   </p>
                 </div>
               </div>
               <button 
                 onClick={() => setSelectedGuideline(null)}
-                className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400 hover:text-slate-600 active:scale-90"
+                className="p-2 sm:p-3 hover:bg-slate-100 rounded-xl sm:rounded-2xl transition-all text-slate-400 hover:text-slate-600 active:scale-90"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
-            <div className="p-10 overflow-y-auto text-slate-600 leading-relaxed font-medium text-[16px]">
+            <div className="p-6 sm:p-10 overflow-y-auto text-slate-600 leading-relaxed font-medium text-[14px] sm:text-[16px]">
               {selectedGuideline.type === 'image' ? (
                 <div className="flex justify-center">
-                  <img src={selectedGuideline.content} alt={selectedGuideline.name} className="max-w-full h-auto rounded-2xl shadow-lg border border-slate-100" />
+                  <img src={selectedGuideline.content} alt={selectedGuideline.name} className="max-w-full h-auto rounded-xl sm:rounded-2xl shadow-lg border border-slate-100" />
                 </div>
               ) : selectedGuideline.type === 'pdf' ? (
-                <div className="w-full h-[60vh] rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
+                <div className="w-full h-[50vh] sm:h-[60vh] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
                   <iframe
                     src={`data:application/pdf;base64,${selectedGuideline.content}`}
                     className="w-full h-full"
@@ -224,10 +242,10 @@ export default function App() {
                 </div>
               )}
             </div>
-            <div className="p-8 bg-slate-50/50 border-t border-slate-50 flex justify-end gap-3">
+            <div className="p-6 sm:p-8 bg-slate-50/50 border-t border-slate-50 flex justify-end gap-3">
               <button 
                 onClick={() => setSelectedGuideline(null)}
-                className="px-8 py-3 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-900 transition-all shadow-lg shadow-slate-200 active:scale-95"
+                className="w-full sm:w-auto px-8 py-3 bg-slate-800 text-white rounded-xl sm:rounded-2xl font-bold hover:bg-slate-900 transition-all shadow-lg shadow-slate-200 active:scale-95"
               >
                 Close Viewer
               </button>

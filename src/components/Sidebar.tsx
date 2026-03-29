@@ -1,26 +1,42 @@
 import React from 'react';
-import { Activity, Plus, Trash2, FileText, File, Link2, BookOpen, Eye, Image as ImageIcon } from 'lucide-react';
+import { Activity, Plus, Trash2, FileText, File, Link2, BookOpen, Eye, Image as ImageIcon, X } from 'lucide-react';
 import { Guideline } from '../types';
 import { format } from 'date-fns';
+import { cn } from '../lib/utils';
 
 interface SidebarProps {
   guidelines: Guideline[];
   onAddClick: () => void;
   onRemove: (id: string) => void;
   onView: (id: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ guidelines, onAddClick, onRemove, onView }: SidebarProps) {
+export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOpen, onClose }: SidebarProps) {
   return (
-    <aside className="w-[300px] bg-white border-r border-slate-100 flex flex-col h-full shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
-      <div className="p-8 border-b border-slate-50 flex items-center gap-4">
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[18px] flex items-center justify-center shadow-lg shadow-blue-200/50">
-          <Activity className="w-6 h-6 text-white" />
+    <aside className={cn(
+      "fixed inset-y-0 left-0 w-[300px] bg-white border-r border-slate-100 flex flex-col h-full shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
+      isOpen ? "translate-x-0" : "-translate-x-full"
+    )}>
+      <div className="p-8 border-b border-slate-50 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[18px] flex items-center justify-center shadow-lg shadow-blue-200/50">
+            <Activity className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="font-bold text-slate-900 text-lg tracking-tight">PharmaGuide</h1>
+            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mt-0.5">Navigator AI</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-bold text-slate-900 text-lg tracking-tight">PharmaGuide</h1>
-          <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mt-0.5">Navigator AI</p>
-        </div>
+        
+        {/* Mobile Close Button */}
+        <button 
+          onClick={onClose}
+          className="lg:hidden p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       <div className="p-6 flex-1 overflow-y-auto space-y-8">
