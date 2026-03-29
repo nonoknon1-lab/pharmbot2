@@ -80,6 +80,8 @@ export default function App() {
       
       if (errorMessage === "API_KEY_MISSING" || errorMessage.includes("process is not defined")) {
         addBotMessage("⚠️ **ข้อผิดพลาด:** ไม่พบ API Key ในระบบ\n\nหากคุณนำระบบนี้ไป Deploy บน Vercel กรุณาตั้งค่า Environment Variables โดยเพิ่มตัวแปรชื่อ `GEMINI_API_KEY` และใส่ค่า API Key ของคุณครับ\n\n**(สำคัญ: หลังจากเพิ่มตัวแปรใน Vercel แล้ว ต้องไปที่แท็บ Deployments แล้วกด Redeploy ด้วยครับ)**");
+      } else if (errorMessage.includes("429") || errorMessage.includes("quota") || errorMessage.includes("RESOURCE_EXHAUSTED")) {
+        addBotMessage("⚠️ **โควต้าการใช้งาน API เต็ม (Quota Exceeded):**\n\nAPI Key ของคุณใช้งานเกินขีดจำกัดฟรีที่ Google กำหนดไว้สำหรับโมเดลนี้ (หรือบัญชีของคุณยังไม่เปิดใช้งาน Billing)\n\n**วิธีแก้ไข:**\n1. ลองสร้าง API Key ใหม่จากบัญชี Google อื่น\n2. หรือเข้าไปตั้งค่าผูกบัตรเครดิตใน Google AI Studio เพื่อปลดล็อกโควต้าครับ");
       } else {
         addBotMessage(`⚠️ **เกิดข้อผิดพลาดในการเชื่อมต่อ AI:**\n\`${errorMessage}\`\n\nกรุณาตรวจสอบการตั้งค่า API Key หรือลองใหม่อีกครั้งครับ`);
       }
