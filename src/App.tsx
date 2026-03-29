@@ -76,10 +76,12 @@ export default function App() {
       addBotMessage(responseText);
     } catch (error: any) {
       console.error("Error generating response:", error);
-      if (error.message === "API_KEY_MISSING") {
-        addBotMessage("⚠️ **ข้อผิดพลาด:** ไม่พบ API Key ในระบบ\n\nหากคุณนำระบบนี้ไป Deploy บน Vercel กรุณาตั้งค่า Environment Variables โดยเพิ่มตัวแปรชื่อ `GEMINI_API_KEY` และใส่ค่า API Key ของคุณครับ");
+      const errorMessage = error?.message || String(error);
+      
+      if (errorMessage === "API_KEY_MISSING" || errorMessage.includes("process is not defined")) {
+        addBotMessage("⚠️ **ข้อผิดพลาด:** ไม่พบ API Key ในระบบ\n\nหากคุณนำระบบนี้ไป Deploy บน Vercel กรุณาตั้งค่า Environment Variables โดยเพิ่มตัวแปรชื่อ `GEMINI_API_KEY` และใส่ค่า API Key ของคุณครับ\n\n**(สำคัญ: หลังจากเพิ่มตัวแปรใน Vercel แล้ว ต้องไปที่แท็บ Deployments แล้วกด Redeploy ด้วยครับ)**");
       } else {
-        addBotMessage("ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อกับระบบ AI กรุณาลองใหม่อีกครั้งครับ");
+        addBotMessage(`⚠️ **เกิดข้อผิดพลาดในการเชื่อมต่อ AI:**\n\`${errorMessage}\`\n\nกรุณาตรวจสอบการตั้งค่า API Key หรือลองใหม่อีกครั้งครับ`);
       }
     } finally {
       setIsLoading(false);
