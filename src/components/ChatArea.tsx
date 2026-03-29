@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowUp, Sparkles, User, Loader2, Info, Command, Menu } from 'lucide-react';
+import { ArrowUp, Sparkles, User, Loader2, Info, Command, Menu, LogIn } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message } from '../types';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
+import { User as FirebaseUser } from 'firebase/auth';
 
 import NavigatorAvatar from './NavigatorAvatar';
 
@@ -13,9 +14,10 @@ interface ChatAreaProps {
   onSendMessage: (text: string) => void;
   isLoading: boolean;
   onToggleSidebar?: () => void;
+  user: FirebaseUser | null;
 }
 
-export default function ChatArea({ messages, onSendMessage, isLoading, onToggleSidebar }: ChatAreaProps) {
+export default function ChatArea({ messages, onSendMessage, isLoading, onToggleSidebar, user }: ChatAreaProps) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -105,7 +107,11 @@ export default function ChatArea({ messages, onSendMessage, isLoading, onToggleS
                 msg.role === 'user' ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100"
               )}>
                 {msg.role === 'user' ? (
-                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  user?.photoURL ? (
+                    <img src={user.photoURL} alt="User" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  )
                 ) : (
                   <NavigatorAvatar className="w-7 h-7 sm:w-9 sm:h-9" />
                 )}

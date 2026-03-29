@@ -5,23 +5,35 @@ import { Guideline } from '../types';
 interface GuidelineModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (guideline: Guideline) => void;
+  onAdd: (guideline: Guideline, isGlobal: boolean) => void;
+  isAdmin: boolean;
 }
 
-export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModalProps) {
+export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: GuidelineModalProps) {
   const [activeTab, setActiveTab] = useState<'file' | 'text' | 'link' | 'image'>('file');
   const [textName, setTextName] = useState('');
   const [textContent, setTextContent] = useState('');
   const [linkName, setLinkName] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  const [isGlobal, setIsGlobal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  const [error, setError] = useState<string | null>(null);
+
   if (!isOpen) return null;
+
+  const MAX_FILE_SIZE = 1024 * 1024; // 1MB Firestore limit
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError(null);
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`ไฟล์ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(2)}MB). Firestore จำกัดขนาดไฟล์ไม่เกิน 1MB ครับ`);
+      return;
+    }
 
     if (file.type === 'application/pdf') {
       const reader = new FileReader();
@@ -33,7 +45,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
           type: 'pdf',
           content: base64,
           date: new Date().toISOString()
-        });
+        }, isGlobal);
         onClose();
       };
       reader.readAsDataURL(file);
@@ -46,7 +58,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
           type: 'text',
           content: event.target?.result as string,
           date: new Date().toISOString()
-        });
+        }, isGlobal);
         onClose();
       };
       reader.readAsText(file);
@@ -56,6 +68,12 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError(null);
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`รูปภาพ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(2)}MB). Firestore จำกัดขนาดไฟล์ไม่เกิน 1MB ครับ`);
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -65,7 +83,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
         type: 'image',
         content: event.target?.result as string,
         date: new Date().toISOString()
-      });
+      }, isGlobal);
       onClose();
     };
     reader.readAsDataURL(file);
@@ -73,13 +91,22 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
 
   const handleAddText = () => {
     if (!textName.trim() || !textContent.trim()) return;
+    setError(null);
+
+    // Calculate approximate size (UTF-8)
+    const size = new Blob([textContent]).size;
+    if (size > MAX_FILE_SIZE) {
+      setError(`ข้อความมีขนาดใหญ่เกินไป (${(size / (1024 * 1024)).toFixed(2)}MB). Firestore จำกัดขนาดข้อมูลไม่เกิน 1MB ครับ`);
+      return;
+    }
+
     onAdd({
       id: Date.now().toString(),
       name: textName.trim() + '.txt',
       type: 'text',
       content: textContent.trim(),
       date: new Date().toISOString()
-    });
+    }, isGlobal);
     setTextName('');
     setTextContent('');
     onClose();
@@ -93,7 +120,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
       type: 'link',
       content: linkUrl.trim(),
       date: new Date().toISOString()
-    });
+    }, isGlobal);
     setLinkName('');
     setLinkUrl('');
     onClose();
@@ -113,29 +140,51 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
           <div className="flex p-1 bg-slate-100/80 rounded-xl mb-6 overflow-x-auto">
             <button
               className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTab === 'file' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              onClick={() => setActiveTab('file')}
+              onClick={() => { setActiveTab('file'); setError(null); }}
             >
               Upload File
             </button>
             <button
               className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTab === 'image' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              onClick={() => setActiveTab('image')}
+              onClick={() => { setActiveTab('image'); setError(null); }}
             >
               Upload Image
             </button>
             <button
               className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTab === 'link' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              onClick={() => setActiveTab('link')}
+              onClick={() => { setActiveTab('link'); setError(null); }}
             >
               Web Link
             </button>
             <button
               className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTab === 'text' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              onClick={() => setActiveTab('text')}
+              onClick={() => { setActiveTab('text'); setError(null); }}
             >
               Paste Text
             </button>
           </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+              <span className="text-rose-500 shrink-0 mt-0.5">⚠️</span>
+              <p className="text-xs font-bold text-rose-600 leading-relaxed">{error}</p>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="mb-6 flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+              <input
+                type="checkbox"
+                id="isGlobal"
+                checked={isGlobal}
+                onChange={(e) => setIsGlobal(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="isGlobal" className="text-sm font-bold text-slate-700 cursor-pointer">
+                Add to Global Database (Shared with everyone)
+              </label>
+            </div>
+          )}
 
           {activeTab === 'file' && (
             <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => fileInputRef.current?.click()}>
@@ -143,7 +192,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
                 <Upload className="w-5 h-5 text-blue-600" />
               </div>
               <p className="text-sm font-medium text-slate-900 mb-1">Click to upload document</p>
-              <p className="text-xs text-slate-500">Supports PDF, TXT (Max 10MB)</p>
+              <p className="text-xs text-slate-500">Supports PDF, TXT (Max 1MB)</p>
               <input
                 type="file"
                 ref={fileInputRef}
