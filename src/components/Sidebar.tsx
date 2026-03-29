@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Plus, Trash2, FileText, File, Link2, BookOpen, Eye } from 'lucide-react';
+import { Activity, Plus, Trash2, FileText, File, Link2, BookOpen, Eye, Image as ImageIcon } from 'lucide-react';
 import { Guideline } from '../types';
 import { format } from 'date-fns';
 
@@ -59,7 +59,9 @@ export default function Sidebar({ guidelines, onAddClick, onRemove, onView }: Si
                     {g.type === 'pdf' ? (
                       <File className="w-5 h-5 text-rose-500" />
                     ) : g.type === 'link' ? (
-                      <Link2 className="w-5 h-5 text-emerald-500" />
+                      <Link2 className="h-5 w-5 text-emerald-500" />
+                    ) : g.type === 'image' ? (
+                      <ImageIcon className="w-5 h-5 text-amber-500" />
                     ) : (
                       <FileText className="w-5 h-5 text-blue-500" />
                     )}

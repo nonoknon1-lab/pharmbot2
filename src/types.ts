@@ -1,7 +1,7 @@
 export interface Guideline {
   id: string;
   name: string;
-  type: 'text' | 'pdf' | 'link';
+  type: 'text' | 'pdf' | 'link' | 'image';
   content: string;
   date: string;
 }

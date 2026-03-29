@@ -205,8 +205,24 @@ export default function App() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-10 overflow-y-auto text-slate-600 leading-relaxed whitespace-pre-wrap font-medium text-[16px]">
-              {selectedGuideline.content}
+            <div className="p-10 overflow-y-auto text-slate-600 leading-relaxed font-medium text-[16px]">
+              {selectedGuideline.type === 'image' ? (
+                <div className="flex justify-center">
+                  <img src={selectedGuideline.content} alt={selectedGuideline.name} className="max-w-full h-auto rounded-2xl shadow-lg border border-slate-100" />
+                </div>
+              ) : selectedGuideline.type === 'pdf' ? (
+                <div className="w-full h-[60vh] rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
+                  <iframe
+                    src={`data:application/pdf;base64,${selectedGuideline.content}`}
+                    className="w-full h-full"
+                    title={selectedGuideline.name}
+                  />
+                </div>
+              ) : (
+                <div className="whitespace-pre-wrap">
+                  {selectedGuideline.content}
+                </div>
+              )}
             </div>
             <div className="p-8 bg-slate-50/50 border-t border-slate-50 flex justify-end gap-3">
               <button 

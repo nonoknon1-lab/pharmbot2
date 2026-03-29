@@ -9,12 +9,13 @@ interface GuidelineModalProps {
 }
 
 export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModalProps) {
-  const [activeTab, setActiveTab] = useState<'file' | 'text' | 'link'>('file');
+  const [activeTab, setActiveTab] = useState<'file' | 'text' | 'link' | 'image'>('file');
   const [textName, setTextName] = useState('');
   const [textContent, setTextContent] = useState('');
   const [linkName, setLinkName] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -50,6 +51,24 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
       };
       reader.readAsText(file);
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      onAdd({
+        id: Date.now().toString(),
+        name: file.name,
+        type: 'image',
+        content: event.target?.result as string,
+        date: new Date().toISOString()
+      });
+      onClose();
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleAddText = () => {
@@ -91,21 +110,27 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
         </div>
 
         <div className="p-6 overflow-y-auto">
-          <div className="flex p-1 bg-slate-100/80 rounded-xl mb-6">
+          <div className="flex p-1 bg-slate-100/80 rounded-xl mb-6 overflow-x-auto">
             <button
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'file' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTab === 'file' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => setActiveTab('file')}
             >
               Upload File
             </button>
             <button
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'link' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTab === 'image' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              onClick={() => setActiveTab('image')}
+            >
+              Upload Image
+            </button>
+            <button
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTab === 'link' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => setActiveTab('link')}
             >
               Web Link
             </button>
             <button
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'text' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${activeTab === 'text' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               onClick={() => setActiveTab('text')}
             >
               Paste Text
@@ -125,6 +150,23 @@ export default function GuidelineModal({ isOpen, onClose, onAdd }: GuidelineModa
                 className="hidden"
                 accept=".pdf,.txt"
                 onChange={handleFileUpload}
+              />
+            </div>
+          )}
+
+          {activeTab === 'image' && (
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => imageInputRef.current?.click()}>
+              <div className="w-12 h-12 bg-white rounded-full shadow-sm border border-slate-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <File className="w-5 h-5 text-emerald-600" />
+              </div>
+              <p className="text-sm font-medium text-slate-900 mb-1">Click to upload image</p>
+              <p className="text-xs text-slate-500">Supports PNG, JPG, WEBP</p>
+              <input
+                type="file"
+                ref={imageInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageUpload}
               />
             </div>
           )}

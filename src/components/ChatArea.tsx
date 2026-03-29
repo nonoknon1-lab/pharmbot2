@@ -6,13 +6,13 @@ import { Message } from '../types';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
 
+import NavigatorAvatar from './NavigatorAvatar';
+
 interface ChatAreaProps {
   messages: Message[];
   onSendMessage: (text: string) => void;
   isLoading: boolean;
 }
-
-const NAVIGATOR_AVATAR = "https://api.dicebear.com/7.x/bottts/svg?seed=Navigator&backgroundColor=b6e3f4";
 
 export default function ChatArea({ messages, onSendMessage, isLoading }: ChatAreaProps) {
   const [input, setInput] = useState('');
@@ -40,7 +40,7 @@ export default function ChatArea({ messages, onSendMessage, isLoading }: ChatAre
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-50 overflow-hidden">
-              <img src={NAVIGATOR_AVATAR} alt="Navigator" className="w-9 h-9" />
+              <NavigatorAvatar className="w-9 h-9" />
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm"></div>
           </div>
@@ -59,7 +59,7 @@ export default function ChatArea({ messages, onSendMessage, isLoading }: ChatAre
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto mt-[-60px] animate-in fade-in slide-in-from-bottom-8 duration-1000">
             <div className="w-28 h-28 bg-white rounded-[40px] flex items-center justify-center mb-8 shadow-2xl shadow-blue-500/10 border border-slate-50 overflow-hidden">
-              <img src={NAVIGATOR_AVATAR} alt="Navigator" className="w-20 h-20" />
+              <NavigatorAvatar className="w-20 h-20" />
             </div>
             <h3 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">Hey there! I'm Navigator</h3>
             <p className="text-[16px] text-slate-500 mb-10 leading-relaxed font-medium">
@@ -93,7 +93,7 @@ export default function ChatArea({ messages, onSendMessage, isLoading }: ChatAre
                 {msg.role === 'user' ? (
                   <User className="w-5 h-5 text-white" />
                 ) : (
-                  <img src={NAVIGATOR_AVATAR} alt="Navigator" className="w-9 h-9" />
+                  <NavigatorAvatar className="w-9 h-9" />
                 )}
               </div>
               
@@ -130,7 +130,7 @@ export default function ChatArea({ messages, onSendMessage, isLoading }: ChatAre
         {isLoading && (
           <div className="flex gap-5 max-w-4xl mx-auto animate-pulse">
             <div className="w-11 h-11 rounded-[18px] bg-white border border-slate-100 flex items-center justify-center shrink-0 mt-1 shadow-sm overflow-hidden">
-              <img src={NAVIGATOR_AVATAR} alt="Navigator" className="w-9 h-9 grayscale opacity-50" />
+              <NavigatorAvatar className="w-9 h-9" mood="sad" color="pink" />
             </div>
             <div className="flex flex-col gap-2 items-start">
               <div className="px-8 py-5 rounded-[32px] bg-white border border-slate-100 rounded-tl-none shadow-sm flex items-center gap-4">
