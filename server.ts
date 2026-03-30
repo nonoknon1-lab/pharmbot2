@@ -7,34 +7,24 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DATA_FILE = path.join(__dirname, "data", "guidelines.json");
+const DATA_FILE = path.join(process.cwd(), "guidelines_db.json");
 
-async function ensureDataDir() {
-  const dir = path.dirname(DATA_FILE);
-  try {
-    await fs.access(dir);
-  } catch {
-    await fs.mkdir(dir, { recursive: true });
-  }
+async function ensureDataFile() {
   try {
     await fs.access(DATA_FILE);
   } catch {
+    console.log("[Server] Creating new database file at:", DATA_FILE);
     await fs.writeFile(DATA_FILE, JSON.stringify([]));
   }
 }
 
 async function startServer() {
-  await ensureDataDir();
+  await ensureDataFile();
   const app = express();
   const PORT = 3000;
 
   app.use(express.json({ limit: '100mb' }));
   app.use(express.urlencoded({ limit: '100mb', extended: true }));
-
-  // Health check
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", time: new Date().toISOString() });
-  });
 
   // API: Get all guidelines
   app.get("/api/guidelines", async (req, res) => {
@@ -42,8 +32,8 @@ async function startServer() {
       const data = await fs.readFile(DATA_FILE, "utf-8");
       res.json(JSON.parse(data));
     } catch (err) {
-      console.error("Error reading guidelines:", err);
-      res.status(500).json({ error: "Failed to read guidelines" });
+      console.error("[Server] Error reading guidelines:", err);
+      res.status(500).json({ error: "Failed to read database" });
     }
   });
 
@@ -51,18 +41,23 @@ async function startServer() {
   app.post("/api/guidelines", async (req, res) => {
     try {
       const newGuideline = req.body;
-      console.log(`[Server] Adding guideline: ${newGuideline.name} (${newGuideline.type})`);
-      
+      if (!newGuideline || !newGuideline.id) {
+        return res.status(400).json({ error: "Invalid guideline data" });
+      }
+
+      console.log(`[Server] Saving: ${newGuideline.name}`);
       const data = await fs.readFile(DATA_FILE, "utf-8");
       const guidelines = JSON.parse(data);
-      guidelines.push(newGuideline);
       
-      await fs.writeFile(DATA_FILE, JSON.stringify(guidelines, null, 2));
-      console.log(`[Server] Successfully saved: ${newGuideline.name}`);
+      // Prevent duplicates
+      const filtered = guidelines.filter((g: any) => g.id !== newGuideline.id);
+      filtered.push(newGuideline);
+      
+      await fs.writeFile(DATA_FILE, JSON.stringify(filtered, null, 2));
       res.status(201).json(newGuideline);
     } catch (err) {
-      console.error("[Server] Error saving guideline:", err);
-      res.status(500).json({ error: "Failed to save guideline", details: err instanceof Error ? err.message : String(err) });
+      console.error("[Server] Save error:", err);
+      res.status(500).json({ error: "Cloud save failed", details: String(err) });
     }
   });
 
