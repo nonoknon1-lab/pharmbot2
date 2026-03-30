@@ -157,6 +157,20 @@ export default function App() {
     }
 
     // Normal Chat Flow
+    if (lowerText === '/test cloud' || lowerText === 'เช็คระบบ cloud') {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/cloud-v1/health');
+        const data = await res.json();
+        addBotMessage(`✅ **Cloud API Status:**\n- Status: ${data.status}\n- Env: ${data.env}\n- Time: ${new Date(data.time).toLocaleString()}`);
+      } catch (err: any) {
+        addBotMessage(`❌ **Cloud API Connection Failed:** ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     setIsLoading(true);
     try {
       const historyForAI = messages.filter(m => !m.text.startsWith('/'));
@@ -189,6 +203,7 @@ export default function App() {
 
   const handleAddGuideline = async (guideline: Guideline) => {
     try {
+      console.log(`[Client] Saving guideline to: /cloud-v1/guidelines`);
       const response = await fetch('/cloud-v1/guidelines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -199,8 +214,24 @@ export default function App() {
         setGuidelines(prev => [...prev, guideline]);
         addBotMessage(`เพิ่ม Guideline **${guideline.name}** เข้าสู่ระบบ Cloud เรียบร้อยแล้วครับ ทุกคนสามารถใช้งานข้อมูลนี้ได้ทันที`);
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+        const contentType = response.headers.get("content-type");
+        let errorMessage = `Server error: ${response.status}`;
+        
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          console.error('[Client] API Error (JSON):', errorData);
+          errorMessage = errorData.error || errorMessage;
+          if (errorData.hint) {
+            console.warn('[Client] API Hint:', errorData.hint);
+            errorMessage += ` (${errorData.hint})`;
+          }
+        } else {
+          // If it's not JSON, it might be a Vite 404 HTML page
+          const text = await response.text();
+          console.error("[Client] Non-JSON error response:", text.substring(0, 500));
+          errorMessage = `Server returned ${response.status} (Not JSON). This usually means the request didn't match any Express route and fell back to Vite. Response preview: ${text.substring(0, 100)}...`;
+        }
+        throw new Error(errorMessage);
       }
     } catch (err: any) {
       console.error("Failed to save guideline:", err);
