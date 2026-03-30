@@ -34,83 +34,48 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 
+import { get, set } from 'idb-keyval';
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [guidelines, setGuidelines] = useState<Guideline[]>([]);
-  const [globalGuidelines, setGlobalGuidelines] = useState<Guideline[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedGuideline, setSelectedGuideline] = useState<Guideline | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Handle Auth State
+  // Load Guidelines from Server on mount
+  useEffect(() => {
+    const fetchGuidelines = async () => {
+      try {
+        const response = await fetch('/api/guidelines');
+        if (response.ok) {
+          const data = await response.json();
+          setGuidelines(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch guidelines from server:", err);
+      }
+    };
+    fetchGuidelines();
+  }, []);
+
+  // Handle Auth State - Kept minimal for potential future use, but not used for guidelines
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsAuthReady(true);
-      
-      // If user is logged in, save their profile to Firestore
-      if (currentUser) {
-        const userRef = doc(db, 'users', currentUser.uid);
-        setDoc(userRef, {
-          uid: currentUser.uid,
-          email: currentUser.email,
-          displayName: currentUser.displayName,
-          photoURL: currentUser.photoURL,
-          lastLogin: serverTimestamp()
-        }, { merge: true }).catch(err => {
-          handleFirestoreError(err, OperationType.WRITE, `users/${currentUser.uid}`);
-        });
-      }
     });
     return () => unsubscribe();
   }, []);
 
-  // Sync Guidelines from Firestore
-  useEffect(() => {
-    if (!isAuthReady || !user?.uid) {
-      setGuidelines([]);
-      return;
-    }
-
-    const uid = user.uid;
-    const guidelinesPath = `users/${uid}/guidelines`;
-    const q = query(collection(db, guidelinesPath), orderBy('date', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => doc.data() as Guideline);
-      setGuidelines(docs);
-    }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, guidelinesPath);
-    });
-
-    return () => unsubscribe();
-  }, [user?.uid, isAuthReady]);
-
-  // Sync Global Guidelines from Firestore
-  useEffect(() => {
-    const globalPath = 'global_guidelines';
-    const q = query(collection(db, globalPath), orderBy('date', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => doc.data() as Guideline);
-      setGlobalGuidelines(docs);
-    }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, globalPath);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const allGuidelines = [...globalGuidelines, ...guidelines];
-  const isAdmin = user?.email === "nonoknon1@gmail.com";
+  const allGuidelines = [...guidelines];
+  const isAdmin = true; // In this simple non-auth mode, everyone can manage guidelines
 
   const handleLogin = async () => {
     try {
-      setAuthError(null);
       await signInWithGoogle();
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
@@ -216,42 +181,45 @@ export default function App() {
     }]);
   };
 
-  const handleAddGuideline = async (guideline: Guideline, isGlobal: boolean = false) => {
-    if (!user && !isGlobal) return;
-    
-    const path = isGlobal 
-      ? `global_guidelines/${guideline.id}`
-      : `users/${user?.uid}/guidelines/${guideline.id}`;
-
+  const handleAddGuideline = async (guideline: Guideline) => {
     try {
-      await setDoc(doc(db, path), guideline);
-      addBotMessage(`เพิ่ม Guideline **${guideline.name}** เข้าสู่${isGlobal ? 'ฐานข้อมูลกลาง' : 'ระบบ'}เรียบร้อยแล้วครับ ตอนนี้คุณสามารถถามคำถามที่เกี่ยวข้องได้เลย`);
+      const response = await fetch('/api/guidelines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(guideline)
+      });
+      
+      if (response.ok) {
+        setGuidelines(prev => [...prev, guideline]);
+        addBotMessage(`เพิ่ม Guideline **${guideline.name}** เข้าสู่ระบบ Cloud เรียบร้อยแล้วครับ ทุกคนสามารถใช้งานข้อมูลนี้ได้ทันที`);
+      } else {
+        throw new Error("Failed to save to server");
+      }
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, path);
+      console.error("Failed to save guideline:", err);
+      addBotMessage("⚠️ ไม่สามารถบันทึกข้อมูลขึ้น Cloud ได้ กรุณาลองใหม่อีกครั้งครับ");
     }
   };
 
   const handleRemoveGuideline = async (id: string) => {
-    const target = allGuidelines.find(g => g.id === id);
+    const target = guidelines.find(g => g.id === id);
     if (!target) return;
 
-    const isGlobal = globalGuidelines.some(g => g.id === id);
-    
-    if (isGlobal && !isAdmin) {
-      addBotMessage("คุณไม่มีสิทธิ์ลบ Guideline จากฐานข้อมูลกลางครับ");
-      return;
-    }
-
-    const path = isGlobal
-      ? `global_guidelines/${id}`
-      : `users/${user?.uid}/guidelines/${id}`;
-
     try {
-      await deleteDoc(doc(db, path));
-      if (selectedGuideline?.id === id) setSelectedGuideline(null);
-      addBotMessage(`ลบ Guideline **${target.name}** ออกจาก${isGlobal ? 'ฐานข้อมูลกลาง' : 'ระบบ'}เรียบร้อยแล้วครับ`);
+      const response = await fetch(`/api/guidelines/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setGuidelines(prev => prev.filter(g => g.id !== id));
+        if (selectedGuideline?.id === id) setSelectedGuideline(null);
+        addBotMessage(`ลบ Guideline **${target.name}** ออกจากระบบ Cloud เรียบร้อยแล้วครับ`);
+      } else {
+        throw new Error("Failed to delete from server");
+      }
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, path);
+      console.error("Failed to delete guideline:", err);
+      addBotMessage("⚠️ ไม่สามารถลบข้อมูลออกจาก Cloud ได้ กรุณาลองใหม่อีกครั้งครับ");
     }
   };
 

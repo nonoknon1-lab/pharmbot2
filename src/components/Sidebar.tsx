@@ -47,29 +47,25 @@ export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOp
         <div>
           <div className="flex items-center justify-between mb-5 px-2">
             <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.15em]">Knowledge Base</h2>
-            {(user || isAdmin) && (
-              <button
-                onClick={onAddClick}
-                className="p-2 bg-slate-50 text-slate-500 hover:bg-blue-500 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm"
-                title="Add Guideline"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            )}
+            <button
+              onClick={onAddClick}
+              className="p-2 bg-slate-50 text-slate-500 hover:bg-blue-500 hover:text-white rounded-xl transition-all active:scale-90 shadow-sm"
+              title="Add Guideline"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
 
           {guidelines.length === 0 ? (
             <div className="text-center py-12 px-6 bg-slate-50/50 rounded-[32px] border border-dashed border-slate-200/60">
               <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-4" />
               <p className="text-[13px] text-slate-500 font-medium">No guidelines yet</p>
-              {(user || isAdmin) && (
-                <button
-                  onClick={onAddClick}
-                  className="mt-3 text-[13px] text-blue-600 font-bold hover:text-blue-700 transition-colors"
-                >
-                  + Add Source
-                </button>
-              )}
+              <button
+                onClick={onAddClick}
+                className="mt-3 text-[13px] text-blue-600 font-bold hover:text-blue-700 transition-colors"
+              >
+                + Add Source
+              </button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -93,9 +89,6 @@ export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOp
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-[14px] font-bold text-slate-800 truncate leading-tight" title={g.name}>{g.name}</p>
-                      {/* We'll assume global guidelines are those not in user's private collection */}
-                      {/* But a better way is to pass this info in the Guideline type or check path */}
-                      {/* For now, let's just show a badge if it's a global one (we'll need to update the type) */}
                     </div>
                     <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">{format(new Date(g.date), 'MMM dd, yyyy')}</p>
                   </div>
@@ -115,57 +108,19 @@ export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOp
               ))}
             </div>
           )}
-
-          {!user && (
-            <div className="mt-8 text-center py-8 px-6 bg-blue-50/30 rounded-[32px] border border-dashed border-blue-200/60">
-              <LogIn className="w-6 h-6 text-blue-300 mx-auto mb-3" />
-              <p className="text-[12px] text-slate-600 font-bold mb-3">Login to add your personal guidelines</p>
-              <button
-                onClick={onLogin}
-                className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95 text-xs"
-              >
-                Sign in with Google
-              </button>
-            </div>
-          )}
         </div>
       </div>
       
       <div className="p-6 border-t border-slate-50 bg-slate-50/20">
-        {user ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName || ''} className="w-10 h-10 rounded-xl border border-white shadow-sm" />
-              ) : (
-                <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500">
-                  <UserIcon className="w-5 h-5" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-[13px] font-bold text-slate-800 truncate">{user.displayName || 'User'}</p>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">{user.email}</p>
-              </div>
-            </div>
-            <button 
-              onClick={onLogout}
-              className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-[16px] bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-200">
+            CL
           </div>
-        ) : (
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-[16px] bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-slate-200">
-              PH
-            </div>
-            <div>
-              <p className="text-[14px] font-bold text-slate-800">Pharmacist</p>
-              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Guest Mode</p>
-            </div>
+          <div>
+            <p className="text-[14px] font-bold text-slate-800">Cloud Storage</p>
+            <p className="text-[11px] text-blue-500 font-bold uppercase tracking-wider">Connected</p>
           </div>
-        )}
+        </div>
       </div>
     </aside>
   );
