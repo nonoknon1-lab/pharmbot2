@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import GuidelineModal from './components/GuidelineModal';
-import ErrorBoundary from './components/ErrorBoundary';
+import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { Guideline, Message } from './types';
 import { generateClinicalResponse } from './lib/gemini';
 import { File, FileText, Link2, X, LogIn, LogOut, User as UserIcon } from 'lucide-react';
