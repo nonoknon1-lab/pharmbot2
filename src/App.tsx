@@ -193,11 +193,12 @@ export default function App() {
         setGuidelines(prev => [...prev, guideline]);
         addBotMessage(`เพิ่ม Guideline **${guideline.name}** เข้าสู่ระบบ Cloud เรียบร้อยแล้วครับ ทุกคนสามารถใช้งานข้อมูลนี้ได้ทันที`);
       } else {
-        throw new Error("Failed to save to server");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save guideline:", err);
-      addBotMessage("⚠️ ไม่สามารถบันทึกข้อมูลขึ้น Cloud ได้ กรุณาลองใหม่อีกครั้งครับ");
+      addBotMessage(`⚠️ ไม่สามารถบันทึกข้อมูลขึ้น Cloud ได้: ${err.message || 'กรุณาลองใหม่อีกครั้งครับ'}`);
     }
   };
 

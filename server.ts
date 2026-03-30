@@ -11,10 +11,16 @@ const DATA_FILE = path.join(process.cwd(), "guidelines_db.json");
 
 async function ensureDataFile() {
   try {
-    await fs.access(DATA_FILE);
-  } catch {
-    console.log("[Server] Creating new database file at:", DATA_FILE);
-    await fs.writeFile(DATA_FILE, JSON.stringify([]));
+    await fs.access(DATA_FILE, fs.constants.W_OK);
+    console.log("[Server] Database file is accessible and writable:", DATA_FILE);
+  } catch (err) {
+    try {
+      await fs.access(path.dirname(DATA_FILE), fs.constants.W_OK);
+      console.log("[Server] Database file not found, but directory is writable. Creating file...");
+      await fs.writeFile(DATA_FILE, JSON.stringify([]));
+    } catch (dirErr) {
+      console.error("[Server] CRITICAL: Database directory is NOT writable!", dirErr);
+    }
   }
 }
 
@@ -42,10 +48,13 @@ async function startServer() {
     try {
       const newGuideline = req.body;
       if (!newGuideline || !newGuideline.id) {
+        console.warn("[Server] Received invalid guideline data:", req.body);
         return res.status(400).json({ error: "Invalid guideline data" });
       }
 
-      console.log(`[Server] Saving: ${newGuideline.name}`);
+      const bodySize = JSON.stringify(req.body).length;
+      console.log(`[Server] Saving guideline: "${newGuideline.name}" (${newGuideline.type}) - Size: ${(bodySize / 1024).toFixed(2)} KB`);
+      
       const data = await fs.readFile(DATA_FILE, "utf-8");
       const guidelines = JSON.parse(data);
       
@@ -54,6 +63,7 @@ async function startServer() {
       filtered.push(newGuideline);
       
       await fs.writeFile(DATA_FILE, JSON.stringify(filtered, null, 2));
+      console.log(`[Server] Successfully saved: "${newGuideline.name}"`);
       res.status(201).json(newGuideline);
     } catch (err) {
       console.error("[Server] Save error:", err);
