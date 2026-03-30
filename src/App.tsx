@@ -52,10 +52,10 @@ export default function App() {
     const fetchGuidelines = async () => {
       try {
         // Check health first
-        const healthRes = await fetch('/cloud-v1/health');
+        const healthRes = await fetch('/api/health');
         if (healthRes.ok) setIsCloudConnected(true);
 
-        const response = await fetch('/cloud-v1/guidelines');
+        const response = await fetch('/api/guidelines');
         if (response.ok) {
           const data = await response.json();
           setGuidelines(data);
@@ -160,7 +160,7 @@ export default function App() {
     if (lowerText === '/test cloud' || lowerText === 'เช็คระบบ cloud') {
       setIsLoading(true);
       try {
-        const res = await fetch('/cloud-v1/health');
+        const res = await fetch('/api/health');
         const data = await res.json();
         addBotMessage(`✅ **Cloud API Status:**\n- Status: ${data.status}\n- Env: ${data.env}\n- Time: ${new Date(data.time).toLocaleString()}`);
       } catch (err: any) {
@@ -203,8 +203,9 @@ export default function App() {
 
   const handleAddGuideline = async (guideline: Guideline) => {
     try {
-      console.log(`[Client] Saving guideline to: /cloud-v1/guidelines`);
-      const response = await fetch('/cloud-v1/guidelines', {
+      const apiUrl = '/api/guidelines';
+      console.log(`[Client] Saving guideline to: ${apiUrl}`);
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(guideline)
@@ -221,15 +222,11 @@ export default function App() {
           const errorData = await response.json();
           console.error('[Client] API Error (JSON):', errorData);
           errorMessage = errorData.error || errorMessage;
-          if (errorData.hint) {
-            console.warn('[Client] API Hint:', errorData.hint);
-            errorMessage += ` (${errorData.hint})`;
-          }
         } else {
-          // If it's not JSON, it might be a Vite 404 HTML page
+          // If it's not JSON, it might be a platform 404 page
           const text = await response.text();
           console.error("[Client] Non-JSON error response:", text.substring(0, 500));
-          errorMessage = `Server returned ${response.status} (Not JSON). This usually means the request didn't match any Express route and fell back to Vite. Response preview: ${text.substring(0, 100)}...`;
+          errorMessage = `Server returned ${response.status} (Not JSON). Response preview: ${text.substring(0, 100)}...`;
         }
         throw new Error(errorMessage);
       }
@@ -244,7 +241,7 @@ export default function App() {
     if (!target) return;
 
     try {
-      const response = await fetch(`/cloud-v1/guidelines/${id}`, {
+      const response = await fetch(`/api/guidelines/${id}`, {
         method: 'DELETE'
       });
       
