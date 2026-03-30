@@ -28,7 +28,13 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json({ limit: '50mb' }));
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+  // Health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", time: new Date().toISOString() });
+  });
 
   // API: Get all guidelines
   app.get("/api/guidelines", async (req, res) => {
@@ -36,6 +42,7 @@ async function startServer() {
       const data = await fs.readFile(DATA_FILE, "utf-8");
       res.json(JSON.parse(data));
     } catch (err) {
+      console.error("Error reading guidelines:", err);
       res.status(500).json({ error: "Failed to read guidelines" });
     }
   });
@@ -44,13 +51,18 @@ async function startServer() {
   app.post("/api/guidelines", async (req, res) => {
     try {
       const newGuideline = req.body;
+      console.log(`[Server] Adding guideline: ${newGuideline.name} (${newGuideline.type})`);
+      
       const data = await fs.readFile(DATA_FILE, "utf-8");
       const guidelines = JSON.parse(data);
       guidelines.push(newGuideline);
+      
       await fs.writeFile(DATA_FILE, JSON.stringify(guidelines, null, 2));
+      console.log(`[Server] Successfully saved: ${newGuideline.name}`);
       res.status(201).json(newGuideline);
     } catch (err) {
-      res.status(500).json({ error: "Failed to save guideline" });
+      console.error("[Server] Error saving guideline:", err);
+      res.status(500).json({ error: "Failed to save guideline", details: err instanceof Error ? err.message : String(err) });
     }
   });
 
