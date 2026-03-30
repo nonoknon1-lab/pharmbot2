@@ -23,7 +23,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
 
   if (!isOpen) return null;
 
-  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB limit for Cloud Storage
+  const MAX_FILE_SIZE = 1024 * 1024; // 1MB Firestore limit
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -31,7 +31,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
     setError(null);
 
     if (file.size > MAX_FILE_SIZE) {
-      setError(`ไฟล์ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(2)}MB). ระบบจำกัดขนาดไฟล์ไม่เกิน 50MB ครับ`);
+      setError(`ไฟล์ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(2)}MB). Firestore จำกัดขนาดไฟล์ไม่เกิน 1MB ครับ`);
       return;
     }
 
@@ -71,7 +71,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
     setError(null);
 
     if (file.size > MAX_FILE_SIZE) {
-      setError(`รูปภาพ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(2)}MB). ระบบจำกัดขนาดไฟล์ไม่เกิน 50MB ครับ`);
+      setError(`รูปภาพ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(2)}MB). Firestore จำกัดขนาดไฟล์ไม่เกิน 1MB ครับ`);
       return;
     }
 
@@ -96,7 +96,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
     // Calculate approximate size (UTF-8)
     const size = new Blob([textContent]).size;
     if (size > MAX_FILE_SIZE) {
-      setError(`ข้อความมีขนาดใหญ่เกินไป (${(size / (1024 * 1024)).toFixed(2)}MB). ระบบจำกัดขนาดข้อมูลไม่เกิน 50MB ครับ`);
+      setError(`ข้อความมีขนาดใหญ่เกินไป (${(size / (1024 * 1024)).toFixed(2)}MB). Firestore จำกัดขนาดข้อมูลไม่เกิน 1MB ครับ`);
       return;
     }
 

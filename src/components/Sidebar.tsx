@@ -15,10 +15,9 @@ interface SidebarProps {
   onLogin: () => void;
   onLogout: () => void;
   isAdmin: boolean;
-  isCloudConnected: boolean | null;
 }
 
-export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOpen, onClose, user, onLogin, onLogout, isAdmin, isCloudConnected }: SidebarProps) {
+export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOpen, onClose, user, onLogin, onLogout, isAdmin }: SidebarProps) {
   return (
     <aside className={cn(
       "fixed inset-y-0 left-0 w-[300px] bg-white border-r border-slate-100 flex flex-col h-full shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
@@ -90,6 +89,9 @@ export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOp
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-[14px] font-bold text-slate-800 truncate leading-tight" title={g.name}>{g.name}</p>
+                      {/* We'll assume global guidelines are those not in user's private collection */}
+                      {/* But a better way is to pass this info in the Guideline type or check path */}
+                      {/* For now, let's just show a badge if it's a global one (we'll need to update the type) */}
                     </div>
                     <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">{format(new Date(g.date), 'MMM dd, yyyy')}</p>
                   </div>
@@ -109,31 +111,57 @@ export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOp
               ))}
             </div>
           )}
+
+          {!user && (
+            <div className="mt-8 text-center py-8 px-6 bg-blue-50/30 rounded-[32px] border border-dashed border-blue-200/60">
+              <LogIn className="w-6 h-6 text-blue-300 mx-auto mb-3" />
+              <p className="text-[12px] text-slate-600 font-bold mb-3">Login to add your personal guidelines</p>
+              <button
+                onClick={onLogin}
+                className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95 text-xs"
+              >
+                Sign in with Google
+              </button>
+            </div>
+          )}
         </div>
       </div>
       
       <div className="p-6 border-t border-slate-50 bg-slate-50/20">
-        <div className="flex items-center gap-4">
-          <div className={cn(
-            "w-11 h-11 rounded-[16px] flex items-center justify-center text-white text-xs font-bold shadow-lg transition-all",
-            isCloudConnected === true ? "bg-gradient-to-tr from-emerald-500 to-teal-600 shadow-emerald-200" : 
-            isCloudConnected === false ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-200" :
-            "bg-gradient-to-tr from-slate-400 to-slate-500 shadow-slate-200"
-          )}>
-            {isCloudConnected === true ? "OK" : isCloudConnected === false ? "ERR" : "..."}
+        {user ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName || ''} className="w-10 h-10 rounded-xl border border-white shadow-sm" />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500">
+                  <UserIcon className="w-5 h-5" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-[13px] font-bold text-slate-800 truncate">{user.displayName || 'User'}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">{user.email}</p>
+              </div>
+            </div>
+            <button 
+              onClick={onLogout}
+              className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
-          <div>
-            <p className="text-[14px] font-bold text-slate-800">Cloud Storage</p>
-            <p className={cn(
-              "text-[11px] font-bold uppercase tracking-wider",
-              isCloudConnected === true ? "text-emerald-500" : 
-              isCloudConnected === false ? "text-rose-500" :
-              "text-slate-400"
-            )}>
-              {isCloudConnected === true ? "Connected" : isCloudConnected === false ? "Disconnected" : "Connecting..."}
-            </p>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-[16px] bg-gradient-to-tr from-slate-700 to-slate-900 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-slate-200">
+              PH
+            </div>
+            <div>
+              <p className="text-[14px] font-bold text-slate-800">Pharmacist</p>
+              <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Guest Mode</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );
