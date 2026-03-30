@@ -4,6 +4,8 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
+console.log("[Server] Starting server process...");
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -31,6 +33,17 @@ async function startServer() {
 
   app.use(express.json({ limit: '100mb' }));
   app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+  // Request Logger
+  app.use((req, res, next) => {
+    console.log(`[Server] ${req.method} ${req.url}`);
+    next();
+  });
+
+  // Health Check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", message: "Server is running", time: new Date().toISOString() });
+  });
 
   // API: Get all guidelines
   app.get("/api/guidelines", async (req, res) => {
@@ -101,8 +114,11 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`[Server] Server is listening on http://0.0.0.0:${PORT}`);
+    console.log(`[Server] API endpoints: /api/health, /api/guidelines`);
   });
 }
 
-startServer();
+startServer().catch(err => {
+  console.error("[Server] CRITICAL: Server failed to start!", err);
+});
