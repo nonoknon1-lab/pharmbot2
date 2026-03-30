@@ -40,13 +40,8 @@ async function startServer() {
     next();
   });
 
-  // Health Check
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Server is running", time: new Date().toISOString() });
-  });
-
   // API: Get all guidelines
-  app.get("/api/guidelines", async (req, res) => {
+  app.get("/cloud-v1/guidelines", async (req, res) => {
     try {
       const data = await fs.readFile(DATA_FILE, "utf-8");
       res.json(JSON.parse(data));
@@ -57,7 +52,7 @@ async function startServer() {
   });
 
   // API: Add a guideline
-  app.post("/api/guidelines", async (req, res) => {
+  app.post("/cloud-v1/guidelines", async (req, res) => {
     try {
       const newGuideline = req.body;
       if (!newGuideline || !newGuideline.id) {
@@ -66,17 +61,15 @@ async function startServer() {
       }
 
       const bodySize = JSON.stringify(req.body).length;
-      console.log(`[Server] Saving guideline: "${newGuideline.name}" (${newGuideline.type}) - Size: ${(bodySize / 1024).toFixed(2)} KB`);
+      console.log(`[Server] Saving guideline: "${newGuideline.name}" - Size: ${(bodySize / 1024).toFixed(2)} KB`);
       
       const data = await fs.readFile(DATA_FILE, "utf-8");
       const guidelines = JSON.parse(data);
       
-      // Prevent duplicates
       const filtered = guidelines.filter((g: any) => g.id !== newGuideline.id);
       filtered.push(newGuideline);
       
       await fs.writeFile(DATA_FILE, JSON.stringify(filtered, null, 2));
-      console.log(`[Server] Successfully saved: "${newGuideline.name}"`);
       res.status(201).json(newGuideline);
     } catch (err) {
       console.error("[Server] Save error:", err);
@@ -85,7 +78,7 @@ async function startServer() {
   });
 
   // API: Delete a guideline
-  app.delete("/api/guidelines/:id", async (req, res) => {
+  app.delete("/cloud-v1/guidelines/:id", async (req, res) => {
     try {
       const { id } = req.params;
       const data = await fs.readFile(DATA_FILE, "utf-8");
@@ -96,6 +89,11 @@ async function startServer() {
     } catch (err) {
       res.status(500).json({ error: "Failed to delete guideline" });
     }
+  });
+
+  // API: Health Check
+  app.get("/cloud-v1/health", (req, res) => {
+    res.json({ status: "ok", time: new Date().toISOString() });
   });
 
   // Vite middleware for development

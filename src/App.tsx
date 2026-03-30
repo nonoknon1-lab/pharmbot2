@@ -44,19 +44,25 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedGuideline, setSelectedGuideline] = useState<Guideline | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Load Guidelines from Server on mount
+  // Load Guidelines from Server on mount & Health Check
   useEffect(() => {
     const fetchGuidelines = async () => {
       try {
-        const response = await fetch('/api/guidelines');
+        // Check health first
+        const healthRes = await fetch('/cloud-v1/health');
+        if (healthRes.ok) setIsCloudConnected(true);
+
+        const response = await fetch('/cloud-v1/guidelines');
         if (response.ok) {
           const data = await response.json();
           setGuidelines(data);
         }
       } catch (err) {
         console.error("Failed to fetch guidelines from server:", err);
+        setIsCloudConnected(false);
       }
     };
     fetchGuidelines();
@@ -183,7 +189,7 @@ export default function App() {
 
   const handleAddGuideline = async (guideline: Guideline) => {
     try {
-      const response = await fetch('/api/guidelines', {
+      const response = await fetch('/cloud-v1/guidelines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(guideline)
@@ -207,7 +213,7 @@ export default function App() {
     if (!target) return;
 
     try {
-      const response = await fetch(`/api/guidelines/${id}`, {
+      const response = await fetch(`/cloud-v1/guidelines/${id}`, {
         method: 'DELETE'
       });
       
@@ -259,6 +265,7 @@ export default function App() {
           onLogin={handleLogin}
           onLogout={logOut}
           isAdmin={isAdmin}
+          isCloudConnected={isCloudConnected}
         />
         
         <ChatArea 

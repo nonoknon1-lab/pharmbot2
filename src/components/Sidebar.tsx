@@ -15,9 +15,10 @@ interface SidebarProps {
   onLogin: () => void;
   onLogout: () => void;
   isAdmin: boolean;
+  isCloudConnected: boolean | null;
 }
 
-export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOpen, onClose, user, onLogin, onLogout, isAdmin }: SidebarProps) {
+export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOpen, onClose, user, onLogin, onLogout, isAdmin, isCloudConnected }: SidebarProps) {
   return (
     <aside className={cn(
       "fixed inset-y-0 left-0 w-[300px] bg-white border-r border-slate-100 flex flex-col h-full shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
@@ -113,12 +114,24 @@ export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOp
       
       <div className="p-6 border-t border-slate-50 bg-slate-50/20">
         <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-[16px] bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-200">
-            CL
+          <div className={cn(
+            "w-11 h-11 rounded-[16px] flex items-center justify-center text-white text-xs font-bold shadow-lg transition-all",
+            isCloudConnected === true ? "bg-gradient-to-tr from-emerald-500 to-teal-600 shadow-emerald-200" : 
+            isCloudConnected === false ? "bg-gradient-to-tr from-rose-500 to-pink-600 shadow-rose-200" :
+            "bg-gradient-to-tr from-slate-400 to-slate-500 shadow-slate-200"
+          )}>
+            {isCloudConnected === true ? "OK" : isCloudConnected === false ? "ERR" : "..."}
           </div>
           <div>
             <p className="text-[14px] font-bold text-slate-800">Cloud Storage</p>
-            <p className="text-[11px] text-blue-500 font-bold uppercase tracking-wider">Connected</p>
+            <p className={cn(
+              "text-[11px] font-bold uppercase tracking-wider",
+              isCloudConnected === true ? "text-emerald-500" : 
+              isCloudConnected === false ? "text-rose-500" :
+              "text-slate-400"
+            )}>
+              {isCloudConnected === true ? "Connected" : isCloudConnected === false ? "Disconnected" : "Connecting..."}
+            </p>
           </div>
         </div>
       </div>
