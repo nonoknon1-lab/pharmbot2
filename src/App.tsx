@@ -15,6 +15,7 @@ import {
   auth, 
   db, 
   signInWithGoogle, 
+  signInWithGoogleRedirect,
   logOut, 
   handleFirestoreError, 
   OperationType 
@@ -46,6 +47,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedGuideline, setSelectedGuideline] = useState<Guideline | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -124,19 +126,28 @@ export default function App() {
   const allGuidelines = [...globalGuidelines, ...guidelines, ...localGuidelines];
   const isAdmin = user?.email === "nonoknon1@gmail.com";
 
-  const handleLogin = async () => {
+  const handleLogin = async (useRedirect = false) => {
     try {
       setAuthError(null);
-      await signInWithGoogle();
+      setIsAuthLoading(true);
+      if (useRedirect) {
+        await signInWithGoogleRedirect();
+      } else {
+        await signInWithGoogle();
+      }
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
-        addBotMessage("⚠️ การเข้าสู่ระบบถูกยกเลิกเนื่องจากหน้าต่างถูกปิดก่อนเสร็จสิ้นครับ กรุณาลองใหม่อีกครั้งหากต้องการใช้งานฟีเจอร์ที่ต้องระบุตัวตน");
+        addBotMessage("⚠️ การเข้าสู่ระบบถูกยกเลิกเนื่องจากหน้าต่างถูกปิดก่อนเสร็จสิ้นครับ กรุณาลองใหม่อีกครั้ง หรือลองใช้ปุ่ม 'เข้าสู่ระบบแบบ Redirect' ด้านล่างหากหน้าต่างไม่ปรากฏ");
       } else if (error.code === 'auth/cancelled-popup-request') {
         // Ignore this one as it usually happens when multiple popups are opened
+      } else if (error.code === 'auth/unauthorized-domain') {
+        addBotMessage("⚠️ โดเมนนี้ยังไม่ได้รับอนุญาตให้เข้าสู่ระบบใน Firebase Console ครับ กรุณาตรวจสอบการตั้งค่า Authorized Domains");
       } else {
         console.error("Auth Error:", error);
-        addBotMessage(`⚠️ เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ${error.message}`);
+        addBotMessage(`⚠️ เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ${error.message} (Code: ${error.code})\n\nหากยังไม่ได้ผล ลองใช้ปุ่ม 'เข้าสู่ระบบแบบ Redirect' ดูนะครับ`);
       }
+    } finally {
+      setIsAuthLoading(false);
     }
   };
 
@@ -342,6 +353,7 @@ export default function App() {
           onLogin={handleLogin}
           onLogout={logOut}
           isAdmin={isAdmin}
+          isAuthLoading={isAuthLoading}
         />
         
         <ChatArea 

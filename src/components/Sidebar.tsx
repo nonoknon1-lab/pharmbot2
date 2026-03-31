@@ -12,12 +12,13 @@ interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
   user: User | null;
-  onLogin: () => void;
+  onLogin: (useRedirect?: boolean) => void;
   onLogout: () => void;
   isAdmin: boolean;
+  isAuthLoading?: boolean;
 }
 
-export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOpen, onClose, user, onLogin, onLogout, isAdmin }: SidebarProps) {
+export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOpen, onClose, user, onLogin, onLogout, isAdmin, isAuthLoading }: SidebarProps) {
   return (
     <aside className={cn(
       "fixed inset-y-0 left-0 w-[300px] bg-white border-r border-slate-100 flex flex-col h-full shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
@@ -117,10 +118,26 @@ export default function Sidebar({ guidelines, onAddClick, onRemove, onView, isOp
               <LogIn className="w-6 h-6 text-blue-300 mx-auto mb-3" />
               <p className="text-[12px] text-slate-600 font-bold mb-3">Login to add your personal guidelines</p>
               <button
-                onClick={onLogin}
-                className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95 text-xs"
+                onClick={() => onLogin(false)}
+                disabled={isAuthLoading}
+                className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95 text-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Sign in with Google
+                {isAuthLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign in with Google'
+                )}
+              </button>
+              
+              <button
+                onClick={() => onLogin(true)}
+                disabled={isAuthLoading}
+                className="w-full py-2 text-slate-500 hover:text-blue-600 font-bold transition-all text-[10px] uppercase tracking-wider disabled:opacity-50"
+              >
+                Trouble? Try Redirect Mode
               </button>
             </div>
           )}

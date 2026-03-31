@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { initializeFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot, query, where, getDocFromServer } from 'firebase/firestore';
 
 // Import the Firebase configuration
@@ -15,6 +15,7 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Auth functions
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+export const signInWithGoogleRedirect = () => signInWithRedirect(auth, googleProvider);
 export const logOut = () => signOut(auth);
 
 // Error handling

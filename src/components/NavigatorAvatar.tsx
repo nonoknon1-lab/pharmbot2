@@ -81,35 +81,74 @@ export default function NavigatorAvatar({ mood = 'happy', color = 'blue', classN
 
         {/* Face */}
         <g transform="translate(35, 40)">
+          {/* Blush */}
+          {mood === 'happy' && (
+            <>
+              <circle cx="5" cy="15" r="4" fill="white" opacity="0.3" filter="blur(2px)" />
+              <circle cx="30" cy="15" r="4" fill="white" opacity="0.3" filter="blur(2px)" />
+            </>
+          )}
+
           {/* Eyes */}
           <motion.g
             animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
-            transition={{ duration: 3, repeat: Infinity, times: [0, 0.4, 0.5, 0.6, 1] }}
+            transition={{ duration: 4, repeat: Infinity, times: [0, 0.4, 0.45, 0.5, 1] }}
           >
-            <circle cx="10" cy="10" r="3.5" fill="white" />
-            <circle cx="25" cy="10" r="3.5" fill="white" />
+            {/* Left Eye */}
+            <g transform="translate(8, 8)">
+              <circle r="4.5" fill="#1e293b" />
+              <circle cx="-1.5" cy="-1.5" r="1.5" fill="white" />
+            </g>
+            {/* Right Eye */}
+            <g transform="translate(27, 8)">
+              <circle r="4.5" fill="#1e293b" />
+              <circle cx="-1.5" cy="-1.5" r="1.5" fill="white" />
+            </g>
           </motion.g>
 
           {/* Mouth */}
           {mood === 'happy' ? (
-            <path
-              d="M10,22 Q17.5,28 25,22"
+            <motion.path
+              d="M12,22 Q17.5,28 23,22"
               fill="none"
-              stroke="white"
-              strokeWidth="2.5"
+              stroke="#1e293b"
+              strokeWidth="3"
               strokeLinecap="round"
+              animate={{ d: ["M12,22 Q17.5,28 23,22", "M10,22 Q17.5,32 25,22", "M12,22 Q17.5,28 23,22"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             />
           ) : (
             <path
-              d="M12,25 Q17.5,20 23,25"
+              d="M14,26 Q17.5,22 21,26"
               fill="none"
-              stroke="white"
-              strokeWidth="2"
+              stroke="#1e293b"
+              strokeWidth="2.5"
               strokeLinecap="round"
               opacity="0.8"
             />
           )}
         </g>
+
+        {/* Floating Sparkles */}
+        {mood === 'happy' && (
+          <g>
+            <motion.circle 
+              cx="20" cy="20" r="1.5" fill="white" 
+              animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, delay: 0 }}
+            />
+            <motion.circle 
+              cx="85" cy="30" r="2" fill="white" 
+              animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
+              transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+            />
+            <motion.circle 
+              cx="75" cy="85" r="1" fill="white" 
+              animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
+              transition={{ duration: 3, repeat: Infinity, delay: 1 }}
+            />
+          </g>
+        )}
 
         {/* Highlights */}
         <circle cx="40" cy="30" r="8" fill="white" opacity="0.15" />
