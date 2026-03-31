@@ -130,6 +130,10 @@ export default function App() {
     try {
       setAuthError(null);
       setIsAuthLoading(true);
+      
+      // Add a small delay to ensure UI updates
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       if (useRedirect) {
         await signInWithGoogleRedirect();
       } else {
@@ -137,14 +141,15 @@ export default function App() {
       }
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
-        addBotMessage("⚠️ การเข้าสู่ระบบถูกยกเลิกเนื่องจากหน้าต่างถูกปิดก่อนเสร็จสิ้นครับ กรุณาลองใหม่อีกครั้ง หรือลองใช้ปุ่ม 'เข้าสู่ระบบแบบ Redirect' ด้านล่างหากหน้าต่างไม่ปรากฏ");
+        addBotMessage("⚠️ การเข้าสู่ระบบถูกยกเลิกเนื่องจากหน้าต่างถูกปิดก่อนเสร็จสิ้นครับ\n\n**ทางแก้:**\n1. ลองกดปุ่ม **'Trouble? Try Redirect Mode'**\n2. หรือกดปุ่ม **'Open in New Tab'** ที่มุมขวาล่างเพื่อเปิดแอปเต็มหน้าจอแล้วลอง Login อีกครั้งครับ");
       } else if (error.code === 'auth/cancelled-popup-request') {
-        // Ignore this one as it usually happens when multiple popups are opened
+        // Ignore
       } else if (error.code === 'auth/unauthorized-domain') {
-        addBotMessage("⚠️ โดเมนนี้ยังไม่ได้รับอนุญาตให้เข้าสู่ระบบใน Firebase Console ครับ กรุณาตรวจสอบการตั้งค่า Authorized Domains");
+        const currentDomain = window.location.hostname;
+        addBotMessage(`⚠️ **โดเมนไม่ได้รับอนุญาต:** \`${currentDomain}\` ยังไม่ได้ถูกเพิ่มใน Firebase Authorized Domains ครับ\n\n**วิธีแก้ที่ได้ผลที่สุด:**\nกดปุ่ม **'Open in New Tab'** ที่มุมขวาล่าง แล้วลอง Login ในหน้าต่างใหม่ดูนะครับ`);
       } else {
         console.error("Auth Error:", error);
-        addBotMessage(`⚠️ เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ${error.message} (Code: ${error.code})\n\nหากยังไม่ได้ผล ลองใช้ปุ่ม 'เข้าสู่ระบบแบบ Redirect' ดูนะครับ`);
+        addBotMessage(`⚠️ เกิดข้อผิดพลาด: ${error.message} (Code: ${error.code})\n\nแนะนำให้ลอง **'Open in New Tab'** ดูครับ`);
       }
     } finally {
       setIsAuthLoading(false);
@@ -370,6 +375,21 @@ export default function App() {
           onAdd={handleAddGuideline} 
           isAdmin={isAdmin}
         />
+
+        {/* Floating Action for New Tab */}
+        {!user && (
+          <div className="fixed bottom-24 right-6 z-40 animate-bounce">
+            <a 
+              href={window.location.href} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-full text-xs font-bold shadow-2xl hover:bg-slate-800 transition-all border border-white/10"
+            >
+              <LogIn className="w-3 h-3" />
+              Open in New Tab to Login
+            </a>
+          </div>
+        )}
 
         {/* Guideline Content Viewer */}
         {selectedGuideline && (

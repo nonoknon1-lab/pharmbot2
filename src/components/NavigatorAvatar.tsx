@@ -11,7 +11,8 @@ interface NavigatorAvatarProps {
 export default function NavigatorAvatar({ mood = 'happy', color = 'blue', className = "w-10 h-10" }: NavigatorAvatarProps) {
   const shapes = {
     happy: "M20,50 C20,20 40,10 60,15 C80,20 90,40 85,65 C80,90 60,95 40,90 C20,85 15,70 20,50 Z",
-    sad: "M25,55 C25,30 45,20 65,25 C85,30 95,50 90,75 C85,100 65,105 45,100 C25,95 20,80 25,55 Z"
+    sad: "M25,55 C25,30 45,20 65,25 C85,30 95,50 90,75 C85,100 65,105 45,100 C25,95 20,80 25,55 Z",
+    ear: "M0,10 L10,0 L20,10 Q10,15 0,10 Z"
   };
 
   const colors = {
@@ -79,6 +80,25 @@ export default function NavigatorAvatar({ mood = 'happy', color = 'blue', classN
           }}
         />
 
+        {/* Cat Ears */}
+        <g transform="translate(25, 15) rotate(-15)">
+          <path d={shapes.ear} fill={theme.primary} />
+        </g>
+        <g transform="translate(75, 15) rotate(15) scale(-1, 1)">
+          <path d={shapes.ear} fill={theme.primary} />
+        </g>
+
+        {/* Tail */}
+        <motion.path
+          d="M15,75 Q5,85 15,95"
+          fill="none"
+          stroke={theme.primary}
+          strokeWidth="6"
+          strokeLinecap="round"
+          animate={{ d: ["M15,75 Q5,85 15,95", "M15,75 Q0,80 15,95", "M15,75 Q5,85 15,95"] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+
         {/* Face */}
         <g transform="translate(35, 40)">
           {/* Blush */}
@@ -129,7 +149,7 @@ export default function NavigatorAvatar({ mood = 'happy', color = 'blue', classN
           )}
         </g>
 
-        {/* Floating Sparkles */}
+        {/* Floating Sparkles & Hearts */}
         {mood === 'happy' && (
           <g>
             <motion.circle 
@@ -137,10 +157,12 @@ export default function NavigatorAvatar({ mood = 'happy', color = 'blue', classN
               animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
               transition={{ duration: 2, repeat: Infinity, delay: 0 }}
             />
-            <motion.circle 
-              cx="85" cy="30" r="2" fill="white" 
-              animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
-              transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+            {/* Heart */}
+            <motion.path
+              d="M85,25 Q85,20 80,20 Q75,20 75,25 Q75,30 85,35 Q95,30 95,25 Q95,20 90,20 Q85,20 85,25"
+              fill="#fb7185"
+              animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5], y: [0, -10, 0] }}
+              transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
             />
             <motion.circle 
               cx="75" cy="85" r="1" fill="white" 
