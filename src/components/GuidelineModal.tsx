@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, Link2, FileText, File } from 'lucide-react';
+import { X, Upload, Link2, FileText, File, Loader2 } from 'lucide-react';
 import { Guideline } from '../types';
+import { extractTextFromPDF } from '../lib/pdf';
 
 interface GuidelineModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
   const [linkName, setLinkName] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [isGlobal, setIsGlobal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -23,33 +25,52 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
 
   if (!isOpen) return null;
 
-  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB limit for Cloud Storage
+  const MAX_TEXT_SIZE = 700 * 1024; // 700KB limit for text/base64 to stay under Firestore's 1MB limit
+  const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB limit for PDFs (we only store extracted text)
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
 
-    if (file.size > MAX_FILE_SIZE) {
-      setError(`ไฟล์ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(2)}MB). ระบบจำกัดขนาดไฟล์ไม่เกิน 50MB ครับ`);
-      return;
-    }
-
     if (file.type === 'application/pdf') {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = (event.target?.result as string).split(',')[1];
+      if (file.size > MAX_PDF_SIZE) {
+        setError(`ไฟล์ PDF "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(1)}MB). ระบบจำกัดขนาดไฟล์ PDF ไม่เกิน 15MB ครับ`);
+        return;
+      }
+
+      setIsProcessing(true);
+      try {
+        const extractedText = await extractTextFromPDF(file);
+        const textBlobSize = new Blob([extractedText]).size;
+        
+        if (textBlobSize > MAX_TEXT_SIZE) {
+          setError(`เนื้อหาในไฟล์ PDF มีปริมาณมากเกินไป (${(textBlobSize / 1024).toFixed(0)}KB). ระบบจำกัดขนาดข้อความไม่เกิน 700KB ครับ`);
+          setIsProcessing(false);
+          return;
+        }
+
         onAdd({
           id: Date.now().toString(),
           name: file.name,
-          type: 'pdf',
-          content: base64,
+          type: 'pdf', // Keep as pdf so the UI shows the correct icon
+          content: extractedText,
           date: new Date().toISOString()
         }, isGlobal);
         onClose();
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error("PDF Extraction Error:", err);
+        setError("ไม่สามารถอ่านข้อความจากไฟล์ PDF ได้ อาจเป็นไฟล์ที่ถูกล็อคหรือเป็นไฟล์รูปภาพสแกนครับ");
+      } finally {
+        setIsProcessing(false);
+      }
     } else {
+      // Handle TXT files
+      if (file.size > MAX_TEXT_SIZE) {
+        setError(`ไฟล์ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / 1024).toFixed(0)}KB). ระบบจำกัดขนาดไฟล์ไม่เกิน 700KB ครับ`);
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (event) => {
         onAdd({
@@ -70,8 +91,8 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
     if (!file) return;
     setError(null);
 
-    if (file.size > MAX_FILE_SIZE) {
-      setError(`รูปภาพ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(2)}MB). ระบบจำกัดขนาดไฟล์ไม่เกิน 50MB ครับ`);
+    if (file.size > MAX_TEXT_SIZE) {
+      setError(`รูปภาพ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / 1024).toFixed(0)}KB). ระบบจำกัดขนาดไฟล์ไม่เกิน 700KB ครับ`);
       return;
     }
 
@@ -95,8 +116,8 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
 
     // Calculate approximate size (UTF-8)
     const size = new Blob([textContent]).size;
-    if (size > MAX_FILE_SIZE) {
-      setError(`ข้อความมีขนาดใหญ่เกินไป (${(size / (1024 * 1024)).toFixed(2)}MB). ระบบจำกัดขนาดข้อมูลไม่เกิน 50MB ครับ`);
+    if (size > MAX_TEXT_SIZE) {
+      setError(`ข้อความมีขนาดใหญ่เกินไป (${(size / 1024).toFixed(0)}KB). ระบบจำกัดขนาดข้อมูลไม่เกิน 700KB ครับ`);
       return;
     }
 
@@ -187,18 +208,21 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
           )}
 
           {activeTab === 'file' && (
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => fileInputRef.current?.click()}>
+            <div className={`flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`} onClick={() => !isProcessing && fileInputRef.current?.click()}>
               <div className="w-12 h-12 bg-white rounded-full shadow-sm border border-slate-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                <Upload className="w-5 h-5 text-blue-600" />
+                {isProcessing ? <Loader2 className="w-5 h-5 text-blue-600 animate-spin" /> : <Upload className="w-5 h-5 text-blue-600" />}
               </div>
-              <p className="text-sm font-medium text-slate-900 mb-1">Click to upload document</p>
-              <p className="text-xs text-slate-500">Supports PDF, TXT (Max 1MB)</p>
+              <p className="text-sm font-medium text-slate-900 mb-1">
+                {isProcessing ? 'กำลังประมวลผลไฟล์ PDF...' : 'Click to upload document'}
+              </p>
+              <p className="text-xs text-slate-500">Supports PDF (Max 15MB), TXT (Max 700KB)</p>
               <input
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
                 accept=".pdf,.txt"
                 onChange={handleFileUpload}
+                disabled={isProcessing}
               />
             </div>
           )}

@@ -123,7 +123,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const allGuidelines = [...globalGuidelines, ...guidelines, ...localGuidelines];
+  const allGuidelines = [...globalGuidelines, ...guidelines, ...localGuidelines].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const isAdmin = user?.email === "nonoknon1@gmail.com";
 
   const handleLogin = async (useRedirect = false) => {
@@ -256,8 +256,9 @@ export default function App() {
       try {
         await setDoc(doc(db, path), guideline);
         addBotMessage(`เพิ่ม Guideline **${guideline.name}** เข้าสู่ฐานข้อมูลกลางเรียบร้อยแล้วครับ`);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, path);
+      } catch (err: any) {
+        console.error("Add global guideline error:", err);
+        addBotMessage(`❌ ไม่สามารถเพิ่ม Guideline ได้: ${err.message || 'Permission Denied'}`);
       }
       return;
     }
@@ -268,8 +269,9 @@ export default function App() {
       try {
         await setDoc(doc(db, path), guideline);
         addBotMessage(`เพิ่ม Guideline **${guideline.name}** เข้าสู่ระบบเรียบร้อยแล้วครับ`);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, path);
+      } catch (err: any) {
+        console.error("Add personal guideline error:", err);
+        addBotMessage(`❌ ไม่สามารถเพิ่ม Guideline ได้: ${err.message || 'Permission Denied'}`);
       }
     } else {
       // Guest Mode: Save to Local Storage (IndexedDB)

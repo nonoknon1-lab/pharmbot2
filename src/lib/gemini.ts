@@ -81,6 +81,9 @@ export const generateClinicalResponse = async (
   let hasLinks = false;
 
   // 1. Context Injection - Simple RAG (Keyword Match)
+  // Always include the 2 most recent guidelines
+  const recentGuidelines = guidelines.slice(0, 2);
+  
   // Filter guidelines to only include those relevant to the prompt to save tokens and avoid quota issues
   const keywords = prompt.toLowerCase().split(/\s+/).filter(k => k.length > 2);
   const relevantGuidelines = guidelines.filter(g => {
@@ -88,13 +91,13 @@ export const generateClinicalResponse = async (
     if (keywords.length === 0) return true;
     
     const nameMatch = keywords.some(k => g.name.toLowerCase().includes(k));
-    const contentMatch = g.type === 'text' && keywords.some(k => g.content.toLowerCase().includes(k));
+    const contentMatch = (g.type === 'text' || (g.type === 'pdf' && !g.content.startsWith('JVBERi'))) && keywords.some(k => g.content.toLowerCase().includes(k));
     
     return nameMatch || contentMatch;
-  }).slice(0, 5); // Limit to top 5 relevant guidelines to save tokens
+  });
 
-  // If no specific match, just take the most recent 3
-  const contextGuidelines = relevantGuidelines.length > 0 ? relevantGuidelines : guidelines.slice(0, 3);
+  // Combine recent and relevant, deduplicate, and limit to 5
+  const contextGuidelines = Array.from(new Set([...recentGuidelines, ...relevantGuidelines])).slice(0, 5);
 
   if (contextGuidelines.length > 0) {
     const contextParts: Part[] = [
@@ -108,12 +111,18 @@ export const generateClinicalResponse = async (
         const truncatedContent = g.content.length > 50000 ? g.content.substring(0, 50000) + "... [truncated]" : g.content;
         contextParts.push({ text: truncatedContent });
       } else if (g.type === 'pdf') {
-        // Only send PDF data if it's within a reasonable size (e.g., < 500KB base64)
-        // Large PDFs should be pre-processed or only sent if specifically requested
-        if (g.content.length < 700000) {
-          contextParts.push({ inlineData: { mimeType: 'application/pdf', data: g.content } });
+        // Check if it's base64 (old format) or extracted text (new format)
+        // Base64 PDF usually starts with JVBERi
+        if (g.content.startsWith('JVBERi')) {
+          if (g.content.length < 700000) {
+            contextParts.push({ inlineData: { mimeType: 'application/pdf', data: g.content } });
+          } else {
+            contextParts.push({ text: `[PDF Content for ${g.name} is too large to send directly. Please refer to the guideline name and use your general knowledge if specifically allowed by instructions, but otherwise state that the content is too large.]` });
+          }
         } else {
-          contextParts.push({ text: `[PDF Content for ${g.name} is too large to send directly. Please refer to the guideline name and use your general knowledge if specifically allowed by instructions, but otherwise state that the content is too large.]` });
+          // It's extracted text
+          const truncatedContent = g.content.length > 50000 ? g.content.substring(0, 50000) + "... [truncated]" : g.content;
+          contextParts.push({ text: truncatedContent });
         }
       } else if (g.type === 'link') {
         contextParts.push({ text: `Please read the content from this URL: ${g.content}` });
