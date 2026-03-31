@@ -9,172 +9,141 @@ interface NavigatorAvatarProps {
 }
 
 export default function NavigatorAvatar({ mood = 'happy', color = 'blue', className = "w-10 h-10" }: NavigatorAvatarProps) {
-  const shapes = {
-    happy: "M20,50 C20,20 40,10 60,15 C80,20 90,40 85,65 C80,90 60,95 40,90 C20,85 15,70 20,50 Z",
-    sad: "M25,55 C25,30 45,20 65,25 C85,30 95,50 90,75 C85,100 65,105 45,100 C25,95 20,80 25,55 Z",
-    ear: "M0,10 L10,0 L20,10 Q10,15 0,10 Z"
+  const theme = {
+    primary: "#10b981", // Emerald green (Pharmacy Cross)
+    coat: "#ffffff",
+    skin: "#fde047", // Warm skin tone
+    hair: "#334155", // Slate 700
+    glasses: "#0ea5e9", // Blue glasses
+    accent: "#3b82f6" // Blue capsule
   };
-
-  const colors = {
-    blue: {
-      primary: "#3b82f6",
-      secondary: "#2563eb",
-      gradient: ["#60a5fa", "#2563eb"],
-      glow: "rgba(59, 130, 246, 0.4)"
-    },
-    pink: {
-      primary: "#ec4899",
-      secondary: "#db2777",
-      gradient: ["#f472b6", "#db2777"],
-      glow: "rgba(236, 72, 153, 0.4)"
-    }
-  };
-
-  const theme = colors[color];
 
   return (
     <div className={cn("relative flex items-center justify-center", className)}>
-      {/* Glow Effect */}
-      <div 
-        className="absolute inset-0 rounded-full blur-xl opacity-30 animate-pulse"
-        style={{ backgroundColor: theme.glow }}
-      />
-      
-      <svg
-        viewBox="0 0 100 100"
-        className="w-full h-full drop-shadow-lg relative z-10"
+      <svg 
+        viewBox="0 0 100 100" 
+        className="w-full h-full drop-shadow-md relative z-10"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <defs>
-          <linearGradient id={`grad-${color}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: theme.gradient[0], stopOpacity: 1 }} />
-            <stop offset="100%" style={{ stopColor: theme.gradient[1], stopOpacity: 1 }} />
-          </linearGradient>
-          <filter id="inner-shadow">
-            <feOffset dx="0" dy="2" />
-            <feGaussianBlur stdDeviation="2" result="offset-blur" />
-            <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
-            <feFlood floodColor="black" floodOpacity="0.2" result="color" />
-            <feComposite operator="in" in="color" in2="inverse" result="shadow" />
-            <feComponentTransfer in="shadow" result="shadow">
-              <feFuncA type="linear" slope="0.5" />
-            </feComponentTransfer>
-            <feComposite operator="over" in="shadow" in2="SourceGraphic" />
-          </filter>
-        </defs>
+        {/* Background Soft Glow */}
+        <circle cx="50" cy="50" r="45" fill={theme.primary} opacity="0.05" />
 
-        {/* Main Body Blob */}
-        <motion.path
-          d={shapes[mood]}
-          fill={`url(#grad-${color})`}
-          filter="url(#inner-shadow)"
-          animate={{
-            d: mood === 'happy' 
-              ? [shapes.happy, "M22,48 C22,18 42,8 62,13 C82,18 92,38 87,63 C82,88 62,93 42,88 C22,83 17,68 22,48 Z", shapes.happy]
-              : [shapes.sad, "M27,53 C27,28 47,18 67,23 C87,28 97,48 92,73 C87,98 67,103 47,98 C27,93 22,78 27,53 Z", shapes.sad]
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
+        <motion.g
+          animate={{ y: [0, -2, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          {/* Body / Lab Coat */}
+          <path 
+            d="M25,100 C25,70 35,65 50,65 C65,65 75,70 75,100 Z" 
+            fill={theme.coat} 
+            stroke="#e2e8f0" 
+            strokeWidth="2" 
+          />
+          
+          {/* Coat Collar & Inner Shirt */}
+          <path d="M45,65 L50,75 L55,65 Z" fill="#bae6fd" />
+          <path 
+            d="M35,65 L50,85 L65,65" 
+            fill="none" 
+            stroke="#cbd5e1" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+          />
+          
+          {/* Green Cross Badge (Pharmacy Symbol) */}
+          <g transform="translate(62, 72) scale(0.5)">
+            <path 
+              d="M10,0 L14,0 L14,10 L24,10 L24,14 L14,14 L14,24 L10,24 L10,14 L0,14 L0,10 L10,10 Z" 
+              fill={theme.primary} 
+            />
+          </g>
 
-        {/* Cat Ears */}
-        <g transform="translate(25, 15) rotate(-15)">
-          <path d={shapes.ear} fill={theme.primary} />
-        </g>
-        <g transform="translate(75, 15) rotate(15) scale(-1, 1)">
-          <path d={shapes.ear} fill={theme.primary} />
-        </g>
+          {/* Neck */}
+          <rect x="45" y="55" width="10" height="12" fill="#fcd34d" />
 
-        {/* Tail */}
-        <motion.path
-          d="M15,75 Q5,85 15,95"
-          fill="none"
-          stroke={theme.primary}
-          strokeWidth="6"
-          strokeLinecap="round"
-          animate={{ d: ["M15,75 Q5,85 15,95", "M15,75 Q0,80 15,95", "M15,75 Q5,85 15,95"] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        />
+          {/* Head */}
+          <circle cx="50" cy="42" r="18" fill={theme.skin} />
 
-        {/* Face */}
-        <g transform="translate(35, 40)">
-          {/* Blush */}
-          {mood === 'happy' && (
-            <>
-              <circle cx="5" cy="15" r="4" fill="white" opacity="0.3" filter="blur(2px)" />
-              <circle cx="30" cy="15" r="4" fill="white" opacity="0.3" filter="blur(2px)" />
-            </>
-          )}
+          {/* Hair (Neat Professional Cut) */}
+          <path 
+            d="M30,45 C30,20 70,20 70,45 C73,30 65,18 50,18 C35,18 27,30 30,45 Z" 
+            fill={theme.hair} 
+          />
+          {/* Hair Bangs */}
+          <path 
+            d="M32,40 C35,30 45,25 55,28 C60,29 65,35 68,40" 
+            fill="none" 
+            stroke={theme.hair} 
+            strokeWidth="4" 
+            strokeLinecap="round" 
+          />
+
+          {/* Glasses */}
+          <rect x="35" y="36" width="12" height="8" rx="2" fill="none" stroke={theme.glasses} strokeWidth="1.5" />
+          <rect x="53" y="36" width="12" height="8" rx="2" fill="none" stroke={theme.glasses} strokeWidth="1.5" />
+          <line x1="47" y1="40" x2="53" y2="40" stroke={theme.glasses} strokeWidth="1.5" />
 
           {/* Eyes */}
           <motion.g
             animate={{ scaleY: [1, 1, 0.1, 1, 1] }}
-            transition={{ duration: 4, repeat: Infinity, times: [0, 0.4, 0.45, 0.5, 1] }}
+            transition={{ duration: 4, repeat: Infinity, times: [0, 0.45, 0.5, 0.55, 1] }}
           >
-            {/* Left Eye */}
-            <g transform="translate(8, 8)">
-              <circle r="4.5" fill="#1e293b" />
-              <circle cx="-1.5" cy="-1.5" r="1.5" fill="white" />
-            </g>
-            {/* Right Eye */}
-            <g transform="translate(27, 8)">
-              <circle r="4.5" fill="#1e293b" />
-              <circle cx="-1.5" cy="-1.5" r="1.5" fill="white" />
-            </g>
+            <circle cx="41" cy="40" r="2" fill="#1e293b" />
+            <circle cx="59" cy="40" r="2" fill="#1e293b" />
           </motion.g>
+
+          {/* Blush */}
+          {mood === 'happy' && (
+            <>
+              <circle cx="36" cy="46" r="2.5" fill="#f87171" opacity="0.4" filter="blur(1px)" />
+              <circle cx="64" cy="46" r="2.5" fill="#f87171" opacity="0.4" filter="blur(1px)" />
+            </>
+          )}
 
           {/* Mouth */}
           {mood === 'happy' ? (
-            <motion.path
-              d="M12,22 Q17.5,28 23,22"
-              fill="none"
-              stroke="#1e293b"
-              strokeWidth="3"
-              strokeLinecap="round"
-              animate={{ d: ["M12,22 Q17.5,28 23,22", "M10,22 Q17.5,32 25,22", "M12,22 Q17.5,28 23,22"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            <path 
+              d="M46,48 Q50,52 54,48" 
+              fill="none" 
+              stroke="#1e293b" 
+              strokeWidth="1.5" 
+              strokeLinecap="round" 
             />
           ) : (
-            <path
-              d="M14,26 Q17.5,22 21,26"
-              fill="none"
-              stroke="#1e293b"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              opacity="0.8"
+            <path 
+              d="M47,50 Q50,48 53,50" 
+              fill="none" 
+              stroke="#1e293b" 
+              strokeWidth="1.5" 
+              strokeLinecap="round" 
             />
           )}
-        </g>
+        </motion.g>
 
-        {/* Floating Sparkles & Hearts */}
+        {/* Floating Capsule (Pharmacy Element) */}
+        <motion.g 
+          animate={{ y: [0, -4, 0], rotate: [-15, 5, -15] }} 
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          transform="translate(15, 30)"
+        >
+          {/* Top half (Blue) */}
+          <path d="M0,6 Q0,0 5,0 Q10,0 10,6 L10,10 L0,10 Z" fill={theme.accent} />
+          {/* Bottom half (White) */}
+          <path d="M0,10 L10,10 L10,14 Q10,20 5,20 Q0,20 0,14 Z" fill="#ffffff" stroke="#e2e8f0" strokeWidth="0.5" />
+          {/* Shine */}
+          <path d="M2,4 L2,8" stroke="#ffffff" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+        </motion.g>
+
+        {/* Floating Sparkles for Happy Mood */}
         {mood === 'happy' && (
-          <g>
-            <motion.circle 
-              cx="20" cy="20" r="1.5" fill="white" 
-              animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity, delay: 0 }}
-            />
-            {/* Heart */}
-            <motion.path
-              d="M85,25 Q85,20 80,20 Q75,20 75,25 Q75,30 85,35 Q95,30 95,25 Q95,20 90,20 Q85,20 85,25"
-              fill="#fb7185"
-              animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5], y: [0, -10, 0] }}
-              transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
-            />
-            <motion.circle 
-              cx="75" cy="85" r="1" fill="white" 
-              animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
-              transition={{ duration: 3, repeat: Infinity, delay: 1 }}
-            />
-          </g>
+          <motion.g 
+            animate={{ opacity: [0, 1, 0], scale: [0.8, 1.2, 0.8] }} 
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <path d="M80,25 L82,30 L87,32 L82,34 L80,39 L78,34 L73,32 L78,30 Z" fill="#fbbf24" />
+          </motion.g>
         )}
-
-        {/* Highlights */}
-        <circle cx="40" cy="30" r="8" fill="white" opacity="0.15" />
-        <circle cx="35" cy="28" r="4" fill="white" opacity="0.1" />
       </svg>
     </div>
   );

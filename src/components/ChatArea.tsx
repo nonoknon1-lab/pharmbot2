@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { User as FirebaseUser } from 'firebase/auth';
 
 import NavigatorAvatar from './NavigatorAvatar';
+import SuggestedQuestions from './SuggestedQuestions';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -170,6 +171,11 @@ export default function ChatArea({ messages, onSendMessage, isLoading, onToggleS
       {/* Input Area */}
       <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white/95 to-transparent pt-8 sm:pt-16 pb-6 sm:pb-10 px-4 sm:px-6 z-20">
         <div className="max-w-4xl mx-auto relative">
+          {/* Horizontal Suggested Questions */}
+          <div className="mb-4">
+            <SuggestedQuestions onSelectQuestion={(q) => onSendMessage(q)} />
+          </div>
+
           <form 
             onSubmit={handleSubmit}
             className="flex items-center gap-2 sm:gap-3 bg-white border border-slate-200/60 rounded-[24px] sm:rounded-[32px] p-2 sm:p-3 shadow-[0_12px_40px_rgba(0,0,0,0.04)] focus-within:ring-4 focus-within:ring-blue-500/5 focus-within:border-blue-500/40 transition-all"
