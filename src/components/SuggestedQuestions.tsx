@@ -9,12 +9,12 @@ interface SuggestedQuestionsProps {
 }
 
 const QUESTIONS = [
-  "อาการของโรคติดเชื้อทางเดินหายใจส่วนบนมีอะไรบ้าง?",
-  "ไข้หวัดธรรมดา กับ ไข้หวัดใหญ่ ต่างกันอย่างไร?",
-  "เมื่อไหร่ที่ควรใช้ยาปฏิชีวนะ (Antibiotics)?",
-  "วิธีดูแลตัวเองเบื้องต้นเมื่อมีอาการเจ็บคอและไอ",
-  "การล้างจมูกช่วยบรรเทาอาการคัดจมูกได้อย่างไร?",
-  "สัญญาณเตือนที่บอกว่าควรไปพบแพทย์ทันที"
+  "ผู้ป่วยเด็กเป็นหูชั้นในอักเสบคนไหนควรได้ยาปฏิชีวนะ?",
+  "ขนาดยา Amoxicillin สำหรับเด็กที่เป็น Acute Otitis Media คือเท่าไหร่?",
+  "First-line treatment สำหรับ Acute Bacterial Rhinosinusitis (ABRS) คืออะไร?",
+  "ผู้ป่วยแพ้ Penicillin แบบ Anaphylaxis ใช้ยาอะไรแทนในโรค Pharyngitis?",
+  "ข้อบ่งชี้ในการสั่งจ่าย Oseltamivir ในผู้ป่วยไข้หวัดใหญ่มีอะไรบ้าง?",
+  "ระยะเวลาในการให้ยาปฏิชีวนะสำหรับ Strep throat คือกี่วัน?"
 ];
 
 export default function SuggestedQuestions({ onSelectQuestion, className }: SuggestedQuestionsProps) {
