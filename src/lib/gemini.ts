@@ -72,6 +72,33 @@ SAFETY
 - ยา High-Alert ให้ใส่ ⚠️ HIGH-ALERT MEDICATION ทุกครั้ง
 - หากไม่มีข้อมูลใน guideline ห้ามคาดเดาหรือประมาณคำตอบ`;
 
+export const extractTextWithAI = async (file: File): Promise<string> => {
+  const ai = getAIClient();
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.1-flash-preview',
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { inlineData: { mimeType: file.type, data: base64 } },
+          { text: "Extract all text from this document accurately. Preserve the original structure, formatting, and language (especially Thai). Do not add any conversational filler, just return the extracted text." }
+        ]
+      }
+    ]
+  });
+  return response.text || "";
+};
+
 export const generateClinicalResponse = async (
   prompt: string,
   history: Message[],

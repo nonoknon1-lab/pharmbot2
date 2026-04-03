@@ -5,6 +5,7 @@ import { extractTextFromPDF } from '../lib/pdf';
 import { storage } from '../lib/firebase';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { User } from 'firebase/auth';
+import { extractTextWithAI } from '../lib/gemini';
 
 interface GuidelineModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin, user }
   const [linkUrl, setLinkUrl] = useState('');
   const [isGlobal, setIsGlobal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [useAIOCR, setUseAIOCR] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -31,6 +33,7 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin, user }
 
   const MAX_TEXT_SIZE = 700 * 1024; // 700KB limit for text/base64 to stay under Firestore's 1MB limit for Guest
   const MAX_PDF_SIZE = 50 * 1024 * 1024; // 50MB limit for PDFs
+  const MAX_AI_OCR_SIZE = 15 * 1024 * 1024; // 15MB limit for AI OCR
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,9 +46,28 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin, user }
         return;
       }
 
+      if (useAIOCR && file.size > MAX_AI_OCR_SIZE) {
+        setError(`ไฟล์ PDF สำหรับการใช้ AI ช่วยอ่าน ต้องมีขนาดไม่เกิน 15MB ครับ (ขนาดไฟล์ปัจจุบัน: ${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
+        return;
+      }
+
       setIsProcessing(true);
       try {
-        const extractedText = await extractTextFromPDF(file);
+        let extractedText = "";
+        
+        if (useAIOCR) {
+          extractedText = await extractTextWithAI(file);
+        } else {
+          extractedText = await extractTextFromPDF(file);
+          // Fallback to AI OCR if text is empty (likely scanned PDF)
+          if (extractedText.trim().length < 50 && file.size <= MAX_AI_OCR_SIZE) {
+            console.log("PDF seems to be scanned. Falling back to AI OCR...");
+            extractedText = await extractTextWithAI(file);
+          } else if (extractedText.trim().length < 50) {
+            throw new Error("ไฟล์ PDF ดูเหมือนจะเป็นรูปภาพสแกน แต่มีขนาดใหญ่เกินกว่าที่ AI จะช่วยอ่านได้ (จำกัด 15MB)");
+          }
+        }
+
         const id = Date.now().toString();
         let storageUrl = undefined;
         let content: string | undefined = extractedText;
@@ -255,22 +277,37 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin, user }
           )}
 
           {activeTab === 'file' && (
-            <div className={`flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`} onClick={() => !isProcessing && fileInputRef.current?.click()}>
-              <div className="w-12 h-12 bg-white rounded-full shadow-sm border border-slate-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                {isProcessing ? <Loader2 className="w-5 h-5 text-blue-600 animate-spin" /> : <Upload className="w-5 h-5 text-blue-600" />}
+            <div className="space-y-4">
+              <div className={`flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`} onClick={() => !isProcessing && fileInputRef.current?.click()}>
+                <div className="w-12 h-12 bg-white rounded-full shadow-sm border border-slate-100 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                  {isProcessing ? <Loader2 className="w-5 h-5 text-blue-600 animate-spin" /> : <Upload className="w-5 h-5 text-blue-600" />}
+                </div>
+                <p className="text-sm font-medium text-slate-900 mb-1">
+                  {isProcessing ? 'กำลังประมวลผลไฟล์...' : 'Click to upload document'}
+                </p>
+                <p className="text-xs text-slate-500">Supports PDF (Max 50MB), TXT</p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept=".pdf,.txt"
+                  onChange={handleFileUpload}
+                  disabled={isProcessing}
+                />
               </div>
-              <p className="text-sm font-medium text-slate-900 mb-1">
-                {isProcessing ? 'กำลังประมวลผลไฟล์ PDF...' : 'Click to upload document'}
-              </p>
-              <p className="text-xs text-slate-500">Supports PDF (Max 15MB), TXT (Max 700KB)</p>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept=".pdf,.txt"
-                onChange={handleFileUpload}
-                disabled={isProcessing}
-              />
+              <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-100">
+                <input 
+                  type="checkbox" 
+                  checked={useAIOCR} 
+                  onChange={(e) => setUseAIOCR(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  disabled={isProcessing}
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-slate-700">ใช้ AI ช่วยอ่านไฟล์สแกน (OCR)</span>
+                  <span className="text-xs text-slate-500">สำหรับไฟล์ PDF ที่เป็นรูปภาพสแกน (จำกัดขนาดไฟล์ไม่เกิน 15MB) อาจใช้เวลานานขึ้น</span>
+                </div>
+              </label>
             </div>
           )}
 
