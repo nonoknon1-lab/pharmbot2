@@ -74,11 +74,12 @@ service cloud.firestore {
 
     // Validate Guideline
     function isValidGuideline(data) {
-      return data.keys().hasAll(['id', 'name', 'type', 'content', 'date']) &&
+      return data.keys().hasAll(['id', 'name', 'type', 'date']) &&
              data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
              data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
              data.type in ['text', 'pdf', 'link', 'image'] &&
-             data.content is string && data.content.size() > 0 && data.content.size() < 1048576 && // 1MB Firestore limit
+             (!('content' in data) || (data.content is string && data.content.size() < 1048576)) && // 1MB Firestore limit
+             (!('storageUrl' in data) || (data.storageUrl is string && data.storageUrl.size() < 1000)) &&
              data.date is string;
     }
 
