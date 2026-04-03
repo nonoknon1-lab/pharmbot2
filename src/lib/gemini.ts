@@ -85,7 +85,7 @@ export const extractTextWithAI = async (file: File): Promise<string> => {
   });
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-flash-preview',
+    model: 'gemini-3.1-pro-preview',
     contents: [
       {
         role: 'user',
