@@ -74,9 +74,13 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin, user }
           date: new Date().toISOString()
         }, isGlobal);
         onClose();
-      } catch (err) {
-        console.error("PDF Extraction Error:", err);
-        setError("ไม่สามารถอ่านข้อความจากไฟล์ PDF ได้ อาจเป็นไฟล์ที่ถูกล็อคหรือเป็นไฟล์รูปภาพสแกนครับ");
+      } catch (err: any) {
+        console.error("PDF Upload/Extraction Error:", err);
+        if (err?.code?.startsWith('storage/')) {
+          setError(`เกิดข้อผิดพลาดในการอัปโหลดไปยัง Cloud Storage: ${err.message} (กรุณาตรวจสอบการตั้งค่า Firebase Storage Rules)`);
+        } else {
+          setError(`ไม่สามารถอ่านข้อความจากไฟล์ PDF ได้ อาจเป็นไฟล์ที่ถูกล็อคหรือเป็นไฟล์รูปภาพสแกนครับ (${err.message || 'Unknown Error'})`);
+        }
       } finally {
         setIsProcessing(false);
       }
@@ -114,9 +118,13 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin, user }
             date: new Date().toISOString()
           }, isGlobal);
           onClose();
-        } catch (err) {
+        } catch (err: any) {
           console.error("TXT Upload Error:", err);
-          setError("เกิดข้อผิดพลาดในการอัปโหลดไฟล์ข้อความ");
+          if (err?.code?.startsWith('storage/')) {
+            setError(`เกิดข้อผิดพลาดในการอัปโหลดไปยัง Cloud Storage: ${err.message} (กรุณาตรวจสอบการตั้งค่า Firebase Storage Rules)`);
+          } else {
+            setError(`เกิดข้อผิดพลาดในการอัปโหลดไฟล์ข้อความ (${err.message || 'Unknown Error'})`);
+          }
         } finally {
           setIsProcessing(false);
         }
