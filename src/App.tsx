@@ -251,10 +251,15 @@ export default function App() {
   const handleAddGuideline = async (guideline: Guideline, isGlobal: boolean = false) => {
     if (isGlobal && !isAdmin) return;
 
+    // Firestore does not support undefined values. Remove them.
+    const cleanGuideline = Object.fromEntries(
+      Object.entries(guideline).filter(([_, v]) => v !== undefined)
+    );
+
     if (isGlobal) {
       const path = `global_guidelines/${guideline.id}`;
       try {
-        await setDoc(doc(db, path), guideline);
+        await setDoc(doc(db, path), cleanGuideline);
         addBotMessage(`เพิ่ม Guideline **${guideline.name}** เข้าสู่ฐานข้อมูลกลางเรียบร้อยแล้วครับ`);
       } catch (err: any) {
         console.error("Add global guideline error:", err);
@@ -267,7 +272,7 @@ export default function App() {
     if (user) {
       const path = `users/${user.uid}/guidelines/${guideline.id}`;
       try {
-        await setDoc(doc(db, path), guideline);
+        await setDoc(doc(db, path), cleanGuideline);
         addBotMessage(`เพิ่ม Guideline **${guideline.name}** เข้าสู่ระบบเรียบร้อยแล้วครับ`);
       } catch (err: any) {
         console.error("Add personal guideline error:", err);
