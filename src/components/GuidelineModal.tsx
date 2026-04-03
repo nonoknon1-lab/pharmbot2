@@ -2,15 +2,19 @@ import React, { useState, useRef } from 'react';
 import { X, Upload, Link2, FileText, File, Loader2 } from 'lucide-react';
 import { Guideline } from '../types';
 import { extractTextFromPDF } from '../lib/pdf';
+import { storage } from '../lib/firebase';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { User } from 'firebase/auth';
 
 interface GuidelineModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (guideline: Guideline, isGlobal: boolean) => void;
   isAdmin: boolean;
+  user?: User | null;
 }
 
-export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: GuidelineModalProps) {
+export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin, user }: GuidelineModalProps) {
   const [activeTab, setActiveTab] = useState<'file' | 'text' | 'link' | 'image'>('file');
   const [textName, setTextName] = useState('');
   const [textContent, setTextContent] = useState('');
@@ -25,8 +29,8 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
 
   if (!isOpen) return null;
 
-  const MAX_TEXT_SIZE = 700 * 1024; // 700KB limit for text/base64 to stay under Firestore's 1MB limit
-  const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB limit for PDFs (we only store extracted text)
+  const MAX_TEXT_SIZE = 700 * 1024; // 700KB limit for text/base64 to stay under Firestore's 1MB limit for Guest
+  const MAX_PDF_SIZE = 50 * 1024 * 1024; // 50MB limit for PDFs
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,26 +39,38 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
 
     if (file.type === 'application/pdf') {
       if (file.size > MAX_PDF_SIZE) {
-        setError(`ไฟล์ PDF "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(1)}MB). ระบบจำกัดขนาดไฟล์ PDF ไม่เกิน 15MB ครับ`);
+        setError(`ไฟล์ PDF "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / (1024 * 1024)).toFixed(1)}MB). ระบบจำกัดขนาดไฟล์ PDF ไม่เกิน 50MB ครับ`);
         return;
       }
 
       setIsProcessing(true);
       try {
         const extractedText = await extractTextFromPDF(file);
-        const textBlobSize = new Blob([extractedText]).size;
-        
-        if (textBlobSize > MAX_TEXT_SIZE) {
-          setError(`เนื้อหาในไฟล์ PDF มีปริมาณมากเกินไป (${(textBlobSize / 1024).toFixed(0)}KB). ระบบจำกัดขนาดข้อความไม่เกิน 700KB ครับ`);
-          setIsProcessing(false);
-          return;
+        const id = Date.now().toString();
+        let storageUrl = undefined;
+        let content: string | undefined = extractedText;
+
+        if (user) {
+          const storagePath = isGlobal ? `global_guidelines/${id}.txt` : `users/${user.uid}/guidelines/${id}.txt`;
+          const textRef = ref(storage, storagePath);
+          await uploadString(textRef, extractedText);
+          storageUrl = await getDownloadURL(textRef);
+          content = undefined; // Don't save content in Firestore to bypass 1MB limit
+        } else {
+          const textBlobSize = new Blob([extractedText]).size;
+          if (textBlobSize > MAX_TEXT_SIZE) {
+            setError(`เนื้อหาในไฟล์ PDF มีปริมาณมากเกินไป (${(textBlobSize / 1024).toFixed(0)}KB). ระบบจำกัดขนาดข้อความไม่เกิน 700KB สำหรับผู้ใช้ทั่วไป (Guest) ครับ กรุณาเข้าสู่ระบบเพื่ออัปโหลดไฟล์ขนาดใหญ่`);
+            setIsProcessing(false);
+            return;
+          }
         }
 
         onAdd({
-          id: Date.now().toString(),
+          id,
           name: file.name,
-          type: 'pdf', // Keep as pdf so the UI shows the correct icon
-          content: extractedText,
+          type: 'pdf',
+          content,
+          storageUrl,
           date: new Date().toISOString()
         }, isGlobal);
         onClose();
@@ -66,21 +82,44 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin }: Guid
       }
     } else {
       // Handle TXT files
-      if (file.size > MAX_TEXT_SIZE) {
-        setError(`ไฟล์ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / 1024).toFixed(0)}KB). ระบบจำกัดขนาดไฟล์ไม่เกิน 700KB ครับ`);
-        return;
-      }
-
       const reader = new FileReader();
-      reader.onload = (event) => {
-        onAdd({
-          id: Date.now().toString(),
-          name: file.name,
-          type: 'text',
-          content: event.target?.result as string,
-          date: new Date().toISOString()
-        }, isGlobal);
-        onClose();
+      reader.onload = async (event) => {
+        const extractedText = event.target?.result as string;
+        const id = Date.now().toString();
+        let storageUrl = undefined;
+        let content: string | undefined = extractedText;
+
+        setIsProcessing(true);
+        try {
+          if (user) {
+            const storagePath = isGlobal ? `global_guidelines/${id}.txt` : `users/${user.uid}/guidelines/${id}.txt`;
+            const textRef = ref(storage, storagePath);
+            await uploadString(textRef, extractedText);
+            storageUrl = await getDownloadURL(textRef);
+            content = undefined;
+          } else {
+            if (file.size > MAX_TEXT_SIZE) {
+              setError(`ไฟล์ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / 1024).toFixed(0)}KB). ระบบจำกัดขนาดไฟล์ไม่เกิน 700KB สำหรับผู้ใช้ทั่วไป (Guest) ครับ กรุณาเข้าสู่ระบบเพื่ออัปโหลดไฟล์ขนาดใหญ่`);
+              setIsProcessing(false);
+              return;
+            }
+          }
+
+          onAdd({
+            id,
+            name: file.name,
+            type: 'text',
+            content,
+            storageUrl,
+            date: new Date().toISOString()
+          }, isGlobal);
+          onClose();
+        } catch (err) {
+          console.error("TXT Upload Error:", err);
+          setError("เกิดข้อผิดพลาดในการอัปโหลดไฟล์ข้อความ");
+        } finally {
+          setIsProcessing(false);
+        }
       };
       reader.readAsText(file);
     }

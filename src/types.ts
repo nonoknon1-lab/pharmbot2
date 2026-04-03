@@ -2,7 +2,8 @@ export interface Guideline {
   id: string;
   name: string;
   type: 'text' | 'pdf' | 'link' | 'image';
-  content: string;
+  content?: string;
+  storageUrl?: string;
   date: string;
 }
 

@@ -104,32 +104,31 @@ export const generateClinicalResponse = async (
       { text: "Here are the relevant uploaded guidelines you MUST use to answer all subsequent questions. Do not use outside knowledge. If the answer is not in these guidelines, say so exactly as instructed.\n\n" }
     ];
 
-    contextGuidelines.forEach(g => {
+    for (const g of contextGuidelines) {
       contextParts.push({ text: `--- START GUIDELINE: ${g.name} ---\n` });
-      if (g.type === 'text') {
-        // Truncate very long text guidelines to save tokens
-        const truncatedContent = g.content.length > 50000 ? g.content.substring(0, 50000) + "... [truncated]" : g.content;
-        contextParts.push({ text: truncatedContent });
-      } else if (g.type === 'pdf') {
-        // Check if it's base64 (old format) or extracted text (new format)
-        // Base64 PDF usually starts with JVBERi
-        if (g.content.startsWith('JVBERi')) {
-          if (g.content.length < 700000) {
-            contextParts.push({ inlineData: { mimeType: 'application/pdf', data: g.content } });
-          } else {
-            contextParts.push({ text: `[PDF Content for ${g.name} is too large to send directly. Please refer to the guideline name and use your general knowledge if specifically allowed by instructions, but otherwise state that the content is too large.]` });
-          }
-        } else {
-          // It's extracted text
-          const truncatedContent = g.content.length > 50000 ? g.content.substring(0, 50000) + "... [truncated]" : g.content;
-          contextParts.push({ text: truncatedContent });
+      
+      let contentToUse = g.content || "";
+      if (!contentToUse && g.storageUrl) {
+        try {
+          const res = await fetch(g.storageUrl);
+          contentToUse = await res.text();
+        } catch (err) {
+          console.error(`Failed to fetch content for ${g.name} from storage:`, err);
+          contentToUse = "[Error: Could not load content from storage]";
         }
+      }
+
+      if (g.type === 'text' || g.type === 'pdf') {
+        // Truncate very long text guidelines to save tokens
+        // Gemini 3 Flash has a 2M token limit, so we can allow more text, e.g. 500,000 chars
+        const truncatedContent = contentToUse.length > 500000 ? contentToUse.substring(0, 500000) + "... [truncated]" : contentToUse;
+        contextParts.push({ text: truncatedContent });
       } else if (g.type === 'link') {
-        contextParts.push({ text: `Please read the content from this URL: ${g.content}` });
+        contextParts.push({ text: `Please read the content from this URL: ${contentToUse}` });
         hasLinks = true;
       }
       contextParts.push({ text: `\n--- END GUIDELINE: ${g.name} ---\n\n` });
-    });
+    }
 
     contents.push({ role: 'user', parts: contextParts });
     contents.push({ role: 'model', parts: [{ text: "Understood. I will strictly follow the instructions and ONLY use these relevant guidelines to answer." }] });

@@ -376,6 +376,7 @@ export default function App() {
           onClose={() => setIsModalOpen(false)} 
           onAdd={handleAddGuideline} 
           isAdmin={isAdmin}
+          user={user}
         />
 
         {/* Guideline Content Viewer */}
@@ -412,17 +413,36 @@ export default function App() {
                   <div className="flex justify-center">
                     <img src={selectedGuideline.content} alt={selectedGuideline.name} className="max-w-full h-auto rounded-xl sm:rounded-2xl shadow-lg border border-slate-100" />
                   </div>
-                ) : selectedGuideline.type === 'pdf' ? (
-                  <div className="w-full h-[50vh] sm:h-[60vh] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
-                    <iframe
-                      src={`data:application/pdf;base64,${selectedGuideline.content}`}
-                      className="w-full h-full"
-                      title={selectedGuideline.name}
-                    />
-                  </div>
                 ) : (
                   <div className="whitespace-pre-wrap">
-                    {selectedGuideline.content}
+                    {selectedGuideline.content ? (
+                      selectedGuideline.content.startsWith('JVBERi') ? (
+                        <div className="w-full h-[50vh] sm:h-[60vh] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-100 shadow-inner">
+                          <iframe
+                            src={`data:application/pdf;base64,${selectedGuideline.content}`}
+                            className="w-full h-full"
+                            title={selectedGuideline.name}
+                          />
+                        </div>
+                      ) : (
+                        selectedGuideline.content
+                      )
+                    ) : selectedGuideline.storageUrl ? (
+                      <div className="flex flex-col items-center justify-center py-10">
+                        <FileText className="w-12 h-12 text-slate-300 mb-4" />
+                        <p className="text-slate-500 mb-4 text-center">เนื้อหาถูกจัดเก็บในระบบ Cloud Storage</p>
+                        <a 
+                          href={selectedGuideline.storageUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="px-6 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 transition-colors"
+                        >
+                          เปิดดูเนื้อหา (Text)
+                        </a>
+                      </div>
+                    ) : (
+                      "ไม่มีเนื้อหา"
+                    )}
                   </div>
                 )}
               </div>
