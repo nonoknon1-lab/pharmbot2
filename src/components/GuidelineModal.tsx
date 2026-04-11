@@ -72,14 +72,18 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin, user }
         let storageUrl = undefined;
         let content: string | undefined = extractedText;
 
+        const textBlobSize = new Blob([extractedText]).size;
+
         if (user) {
-          const storagePath = isGlobal ? `global_guidelines/${id}.txt` : `users/${user.uid}/guidelines/${id}.txt`;
-          const textRef = ref(storage, storagePath);
-          await uploadString(textRef, extractedText);
-          storageUrl = await getDownloadURL(textRef);
-          content = undefined; // Don't save content in Firestore to bypass 1MB limit
+          if (textBlobSize > 800 * 1024) {
+            // Only use Storage if text is > 800KB to bypass Firestore 1MB limit
+            const storagePath = isGlobal ? `global_guidelines/${id}.txt` : `users/${user.uid}/guidelines/${id}.txt`;
+            const textRef = ref(storage, storagePath);
+            await uploadString(textRef, extractedText);
+            storageUrl = await getDownloadURL(textRef);
+            content = undefined; 
+          }
         } else {
-          const textBlobSize = new Blob([extractedText]).size;
           if (textBlobSize > MAX_TEXT_SIZE) {
             setError(`เนื้อหาในไฟล์ PDF มีปริมาณมากเกินไป (${(textBlobSize / 1024).toFixed(0)}KB). ระบบจำกัดขนาดข้อความไม่เกิน 700KB สำหรับผู้ใช้ทั่วไป (Guest) ครับ กรุณาเข้าสู่ระบบเพื่ออัปโหลดไฟล์ขนาดใหญ่`);
             setIsProcessing(false);
@@ -117,12 +121,16 @@ export default function GuidelineModal({ isOpen, onClose, onAdd, isAdmin, user }
 
         setIsProcessing(true);
         try {
+          const textBlobSize = new Blob([extractedText]).size;
+
           if (user) {
-            const storagePath = isGlobal ? `global_guidelines/${id}.txt` : `users/${user.uid}/guidelines/${id}.txt`;
-            const textRef = ref(storage, storagePath);
-            await uploadString(textRef, extractedText);
-            storageUrl = await getDownloadURL(textRef);
-            content = undefined;
+            if (textBlobSize > 800 * 1024) {
+              const storagePath = isGlobal ? `global_guidelines/${id}.txt` : `users/${user.uid}/guidelines/${id}.txt`;
+              const textRef = ref(storage, storagePath);
+              await uploadString(textRef, extractedText);
+              storageUrl = await getDownloadURL(textRef);
+              content = undefined;
+            }
           } else {
             if (file.size > MAX_TEXT_SIZE) {
               setError(`ไฟล์ "${file.name}" มีขนาดใหญ่เกินไป (${(file.size / 1024).toFixed(0)}KB). ระบบจำกัดขนาดไฟล์ไม่เกิน 700KB สำหรับผู้ใช้ทั่วไป (Guest) ครับ กรุณาเข้าสู่ระบบเพื่ออัปโหลดไฟล์ขนาดใหญ่`);

@@ -140,8 +140,16 @@ export const generateClinicalResponse = async (
           const res = await fetch(g.storageUrl);
           contentToUse = await res.text();
         } catch (err) {
-          console.error(`Failed to fetch content for ${g.name} from storage:`, err);
-          contentToUse = "[Error: Could not load content from storage]";
+          try {
+            // Fallback to a CORS proxy if direct fetch fails (common for Firebase Storage without CORS configured)
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(g.storageUrl)}`;
+            const proxyRes = await fetch(proxyUrl);
+            if (!proxyRes.ok) throw new Error("Proxy fetch failed");
+            contentToUse = await proxyRes.text();
+          } catch (proxyErr) {
+            console.error(`Failed to fetch content for ${g.name} from storage and proxy:`, proxyErr);
+            contentToUse = "[Error: Could not load content from storage]";
+          }
         }
       }
 
