@@ -118,7 +118,7 @@ export const generateClinicalResponse = async (
     if (keywords.length === 0) return true;
     
     const nameMatch = keywords.some(k => g.name.toLowerCase().includes(k));
-    const contentMatch = (g.type === 'text' || (g.type === 'pdf' && !g.content.startsWith('JVBERi'))) && keywords.some(k => g.content.toLowerCase().includes(k));
+    const contentMatch = !!g.content && (g.type === 'text' || (g.type === 'pdf' && !g.content.startsWith('JVBERi'))) && keywords.some(k => g.content.toLowerCase().includes(k));
     
     return nameMatch || contentMatch;
   });
